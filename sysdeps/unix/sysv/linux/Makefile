@@ -206,6 +206,7 @@ tests += \
   tst-getauxval \
   tst-gettid \
   tst-gettid-kill \
+  tst-linux-mremap1 \
   tst-memfd_create \
   tst-misalign-clone \
   tst-mlock2 \
@@ -226,6 +227,7 @@ tests += \
   tst-scm_rights \
   tst-sigtimedwait \
   tst-sync_file_range \
+  tst-syscall-restart \
   tst-sysconf-iov_max \
   tst-sysvmsg-linux \
   tst-sysvsem-linux \

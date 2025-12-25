@@ -1200,10 +1200,8 @@ extern void _dl_get_tls_static_info (size_t *sizep, size_t *alignp);
 
 extern void _dl_allocate_static_tls (struct link_map *map) attribute_hidden;
 
-/* These are internal entry points to the two halves of _dl_allocate_tls,
-   only used within rtld.c itself at startup time.  */
 extern void *_dl_allocate_tls_storage (void) attribute_hidden;
-extern void *_dl_allocate_tls_init (void *, bool);
+extern void *_dl_allocate_tls_init (void *result, bool main_thread);
 rtld_hidden_proto (_dl_allocate_tls_init)
 
 /* True if the TCB has been set up.  */
@@ -1241,13 +1239,7 @@ extern void *_dl_open (const char *name, int mode, const void *caller,
 extern int _dl_scope_free (void *) attribute_hidden;
 
 
-/* Add module to slot information data.  If DO_ADD is false, only the
-   required memory is allocated.  Must be called with GL
-   (dl_load_tls_lock) acquired.  If the function has already been called
-   for the link map L with !do_add, then this function will not raise
-   an exception, otherwise it is possible that it encounters a memory
-   allocation failure.  */
-extern void _dl_add_to_slotinfo (struct link_map *l, bool do_add)
+extern bool _dl_add_to_slotinfo (struct link_map *l, bool do_add)
   attribute_hidden;
 
 /* Update slot information data for at least the generation of the

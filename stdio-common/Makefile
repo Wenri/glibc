@@ -207,6 +207,7 @@ tests := \
   tst-cookie \
   tst-dprintf-length \
   tst-fdopen \
+  tst-fdopen2 \
   tst-ferror \
   tst-fgets \
   tst-fileno \
@@ -216,6 +217,7 @@ tests := \
   tst-fmemopen4 \
   tst-fphex \
   tst-fphex-wide \
+  tst-fread \
   tst-fseek \
   tst-fwrite \
   tst-gets \
@@ -240,6 +242,7 @@ tests := \
   tst-scanf-binary-c23 \
   tst-scanf-binary-gnu11 \
   tst-scanf-binary-gnu89 \
+  tst-scanf-bz27650 \
   tst-scanf-intn \
   tst-scanf-round \
   tst-scanf-to_inpunct \
@@ -253,6 +256,7 @@ tests := \
   tst-swscanf \
   tst-tmpnam \
   tst-ungetc \
+  tst-ungetc-leak \
   tst-unlockedio \
   tst-vfprintf-mbs-prec \
   tst-vfprintf-user-type \
@@ -315,6 +319,7 @@ tests-special += \
   $(objpfx)tst-printf-bz25691-mem.out \
   $(objpfx)tst-printf-fp-free-mem.out \
   $(objpfx)tst-printf-fp-leak-mem.out \
+  $(objpfx)tst-ungetc-leak-mem.out \
   $(objpfx)tst-vfprintf-width-prec-mem.out \
   # tests-special
 
@@ -328,6 +333,9 @@ generated += \
   tst-printf-fp-free.mtrace \
   tst-printf-fp-leak-mem.out \
   tst-printf-fp-leak.mtrace \
+  tst-scanf-bz27650.mtrace \
+  tst-ungetc-leak-mem.out \
+  tst-ungetc-leak.mtrace \
   tst-vfprintf-width-prec-mem.out \
   tst-vfprintf-width-prec.mtrace \
   # generated
@@ -419,6 +427,12 @@ tst-printf-fp-free-ENV = \
 tst-printf-fp-leak-ENV = \
   MALLOC_TRACE=$(objpfx)tst-printf-fp-leak.mtrace \
   LD_PRELOAD=$(common-objpfx)/malloc/libc_malloc_debug.so
+tst-scanf-bz27650-ENV = \
+  MALLOC_TRACE=$(objpfx)tst-scanf-bz27650.mtrace \
+  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
+tst-ungetc-leak-ENV = \
+  MALLOC_TRACE=$(objpfx)tst-ungetc-leak.mtrace \
+  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
 
 $(objpfx)tst-unbputc.out: tst-unbputc.sh $(objpfx)tst-unbputc
 	$(SHELL) $< $(common-objpfx) '$(test-program-prefix)'; \

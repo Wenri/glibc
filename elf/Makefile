@@ -266,6 +266,7 @@ tests-static-normal := \
   tst-array1-static \
   tst-array5-static \
   tst-dl-iter-static \
+  tst-dlopen-sgid \
   tst-dst-static \
   tst-env-setuid-static \
   tst-getauxval-static \
@@ -378,6 +379,7 @@ tests += \
   tst-align3 \
   tst-audit-tlsdesc \
   tst-audit-tlsdesc-dlopen \
+  tst-audit-tlsdesc-dlopen2 \
   tst-audit1 \
   tst-audit2 \
   tst-audit8 \
@@ -416,6 +418,10 @@ tests += \
   tst-dlmopen4 \
   tst-dlopen-self \
   tst-dlopen-tlsmodid \
+  tst-dlopen-tlsreinit1 \
+  tst-dlopen-tlsreinit2 \
+  tst-dlopen-tlsreinit3 \
+  tst-dlopen-tlsreinit4 \
   tst-dlopenfail \
   tst-dlopenfail-2 \
   tst-dlopenrpath \
@@ -813,6 +819,7 @@ modules-names += \
   tst-auditmanymod8 \
   tst-auditmanymod9 \
   tst-auditmod-tlsdesc  \
+  tst-auditmod-tlsdesc2 \
   tst-auditmod1 \
   tst-auditmod11 \
   tst-auditmod12 \
@@ -853,6 +860,10 @@ modules-names += \
   tst-dlmopen-twice-mod1 \
   tst-dlmopen-twice-mod2 \
   tst-dlmopen1mod \
+  tst-dlopen-sgid-mod \
+  tst-dlopen-tlsreinitmod1 \
+  tst-dlopen-tlsreinitmod2 \
+  tst-dlopen-tlsreinitmod3 \
   tst-dlopenfaillinkmod \
   tst-dlopenfailmod1 \
   tst-dlopenfailmod2 \
@@ -3033,6 +3044,9 @@ $(objpfx)tst-audit-tlsdesc.out: $(objpfx)tst-auditmod-tlsdesc.so
 tst-audit-tlsdesc-ENV = LD_AUDIT=$(objpfx)tst-auditmod-tlsdesc.so
 $(objpfx)tst-audit-tlsdesc-dlopen.out: $(objpfx)tst-auditmod-tlsdesc.so
 tst-audit-tlsdesc-dlopen-ENV = LD_AUDIT=$(objpfx)tst-auditmod-tlsdesc.so
+$(objpfx)tst-audit-tlsdesc-dlopen2.out: $(objpfx)tst-auditmod-tlsdesc2.so \
+  $(patsubst %, $(objpfx)%.so, $(tlsmod17a-modules))
+tst-audit-tlsdesc-dlopen2-ENV = LD_AUDIT=$(objpfx)tst-auditmod-tlsdesc2.so
 
 $(objpfx)tst-dlmopen-twice.out: \
   $(objpfx)tst-dlmopen-twice-mod1.so \
@@ -3118,3 +3132,28 @@ $(objpfx)tst-recursive-tls.out: \
     0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15)
 $(objpfx)tst-recursive-tlsmod%.os: tst-recursive-tlsmodN.c
 	$(compile-command.c) -DVAR=thread_$* -DFUNC=get_threadvar_$*
+
+# Order matters here.  The test needs the constructor for
+# tst-dlopen-tlsreinitmod2.so to be called first.
+LDFLAGS-tst-dlopen-tlsreinitmod1.so = -Wl,--no-as-needed
+$(objpfx)tst-dlopen-tlsreinitmod1.so: \
+  $(objpfx)tst-dlopen-tlsreinitmod3.so $(objpfx)tst-dlopen-tlsreinitmod2.so
+LDFLAGS-tst-dlopen-tlsreinit2 = -Wl,--no-as-needed
+$(objpfx)tst-dlopen-tlsreinit2: \
+  $(objpfx)tst-dlopen-tlsreinitmod3.so $(objpfx)tst-dlopen-tlsreinitmod2.so
+LDFLAGS-tst-dlopen-tlsreinit4 = -Wl,--no-as-needed
+$(objpfx)tst-dlopen-tlsreinit4: \
+  $(objpfx)tst-dlopen-tlsreinitmod3.so $(objpfx)tst-dlopen-tlsreinitmod2.so
+# tst-dlopen-tlsreinitmod2.so is underlinked and refers to
+# tst-dlopen-tlsreinitmod3.so.  The dependency is provided via
+# $(objpfx)tst-dlopen-tlsreinitmod1.so.
+tst-dlopen-tlsreinitmod2.so-no-z-defs = yes
+$(objpfx)tst-dlopen-tlsreinit1.out: $(objpfx)tst-dlopen-tlsreinitmod1.so \
+  $(objpfx)tst-dlopen-tlsreinitmod2.so $(objpfx)tst-dlopen-tlsreinitmod3.so
+# Reuse an audit module which provides ample debug logging.
+$(objpfx)tst-dlopen-tlsreinit3.out: $(objpfx)tst-auditmod1.so
+tst-dlopen-tlsreinit3-ENV = LD_AUDIT=$(objpfx)tst-auditmod1.so
+$(objpfx)tst-dlopen-tlsreinit4.out: $(objpfx)tst-auditmod1.so
+tst-dlopen-tlsreinit4-ENV = LD_AUDIT=$(objpfx)tst-auditmod1.so
+
+$(objpfx)tst-dlopen-sgid.out: $(objpfx)tst-dlopen-sgid-mod.so

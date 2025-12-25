@@ -28,6 +28,13 @@
 	.text
 ENTRY (__clone)
 	save	%sp,-96,%sp
+	save	%sp,-96,%sp
+#ifdef __sparcv9
+	flushw
+#else
+	ta 3
+#endif
+	restore
 	cfi_def_cfa_register(%fp)
 	cfi_window_save
 	cfi_register(%o7, %i7)

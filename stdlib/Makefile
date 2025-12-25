@@ -307,6 +307,7 @@ tests := \
   tst-setcontext9 \
   tst-setcontext10 \
   tst-setcontext11 \
+  tst-setenv-environ \
   tst-stdbit-Wconversion \
   tst-stdbit-builtins \
   tst-stdc_bit_ceil \
@@ -603,6 +604,8 @@ $(objpfx)bug-strtod2: $(libm)
 $(objpfx)tst-strtod-round: $(libm)
 $(objpfx)tst-tininess: $(libm)
 $(objpfx)tst-strtod-underflow: $(libm)
+$(objpfx)tst-strtod5: $(libm)
+$(objpfx)tst-strtod5i: $(libm)
 $(objpfx)tst-strtod6: $(libm)
 $(objpfx)tst-strtod-nan-locale: $(libm)
 $(objpfx)tst-strtod-nan-sign: $(libm)

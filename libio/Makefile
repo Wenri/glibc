@@ -117,6 +117,7 @@ tests = \
   tst-mmap-offend \
   tst-mmap-setvbuf \
   tst-mmap2-eofsync \
+  tst-popen-fork \
   tst-popen1 \
   tst-setvbuf1 \
   tst-sprintf-chk-ub \
@@ -140,6 +141,8 @@ tests = \
   tst_wprintf2 \
   tst_wscanf \
   # tests
+
+$(objpfx)tst-popen-fork: $(shared-thread-library)
 
 tests-internal = tst-vtables tst-vtables-interposed
 
@@ -286,11 +289,18 @@ endif
 ifeq ($(build-shared),yes)
 aux	+= oldfileops oldstdfiles
 tests += \
+  tst-fopen-compat \
   tst-stderr-compat \
 # tests
 tests-2.0 += \
+  tst-fopen-compat \
   tst-stderr-compat \
 # tests-2.0
+
+tst-fopen-compat-ARGS = tst-fopen-compat.c
+# Disable PIE to trigger copy relocation.
+CFLAGS-tst-fopen-compat.c += -fno-pie
+tst-fopen-compat-no-pie = yes
 endif
 
 shared-only-routines = oldiofopen oldiofdopen oldiofclose oldfileops	\

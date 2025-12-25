@@ -160,6 +160,7 @@ tests := \
   test-wcsncmp \
   test-wcsncpy \
   test-wcsnlen \
+  test-wcsnlen-nonarray \
   test-wcspbrk \
   test-wcsrchr \
   test-wcsspn \
@@ -204,6 +205,10 @@ tests := \
   wcsatcliff \
   wcsmbs-tst1 \
   # tests
+
+# This test runs for a long time.
+xtests += test-wcsncmp-nonarray
+
 
 include ../Rules
 
