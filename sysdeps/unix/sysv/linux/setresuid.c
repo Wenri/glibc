@@ -18,15 +18,16 @@
 #include <errno.h>
 #include <unistd.h>
 #include <setxid.h>
+#include <fakesyscall.h>
 
 
 int
 __setresuid (uid_t ruid, uid_t euid, uid_t suid)
 {
 #ifdef __NR_setresuid32
-  return INLINE_SETXID_SYSCALL (setresuid32, 3, ruid, euid, suid);
+  return syscall (__NR_setresuid32, 3, ruid, euid, suid);
 #else
-  return INLINE_SETXID_SYSCALL (setresuid, 3, ruid, euid, suid);
+  return syscall (__NR_setresuid, 3, ruid, euid, suid);
 #endif
 }
 libc_hidden_def (__setresuid)

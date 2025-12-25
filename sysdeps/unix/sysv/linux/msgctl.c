@@ -21,6 +21,7 @@
 #include <shlib-compat.h>
 #include <errno.h>
 #include <linux/posix_types.h>  /* For __kernel_mode_t.  */
+#include <fakesyscall.h>
 
 /* POSIX states ipc_perm mode should have type of mode_t.  */
 _Static_assert (sizeof ((struct msqid_ds){0}.msg_perm.mode)
@@ -75,7 +76,7 @@ static int
 msgctl_syscall (int msqid, int cmd, msgctl_arg_t *buf)
 {
 #ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
-  return INLINE_SYSCALL_CALL (msgctl, msqid, cmd | __IPC_64, buf);
+  return syscall (__NR_msgctl, msqid, cmd | __IPC_64, buf);
 #else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_msgctl, msqid, cmd | __IPC_64, 0,
 			      buf);
@@ -282,7 +283,7 @@ __old_msgctl (int msqid, int cmd, struct __old_msqid_ds *buf)
   /* For architecture that have wire-up msgctl but also have __IPC_64 to a
      value different than default (0x0) it means the compat symbol used the
      __NR_ipc syscall.  */
-  return INLINE_SYSCALL_CALL (msgctl, msqid, cmd, buf);
+  return syscall (__NR_msgctl, msqid, cmd, buf);
 #else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_msgctl, msqid, cmd, 0, buf);
 #endif

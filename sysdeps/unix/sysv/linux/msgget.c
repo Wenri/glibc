@@ -18,6 +18,7 @@
 #include <ipc_priv.h>
 #include <sysdep.h>
 #include <errno.h>
+#include <fakesyscall.h>
 
 /* Return descriptor for message queue associated with KEY.  The MSGFLG
    parameter describes how to proceed with clashing of key values.  */
@@ -26,7 +27,7 @@ int
 msgget (key_t key, int msgflg)
 {
 #ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
-  return INLINE_SYSCALL_CALL (msgget, key, msgflg);
+  return syscall (__NR_msgget, key, msgflg);
 #else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_msgget, key, msgflg, 0, NULL);
 #endif

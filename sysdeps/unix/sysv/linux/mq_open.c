@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <sysdep.h>
 #include <shlib-compat.h>
+#include <fakesyscall.h>
 
 /* Establish connection between a process and a message queue NAME and
    return message queue descriptor or (mqd_t) -1 on error.  OFLAG determines
@@ -48,7 +49,7 @@ __mq_open (const char *name, int oflag, ...)
       va_end (ap);
     }
 
-  return INLINE_SYSCALL (mq_open, 4, name + 1, oflag, mode, attr);
+  return syscall (__NR_mq_open, 4, name + 1, oflag, mode, attr);
 }
 versioned_symbol (libc, __mq_open, mq_open, GLIBC_2_34);
 #if OTHER_SHLIB_COMPAT (librt, GLIBC_2_3_4, GLIBC_2_34)

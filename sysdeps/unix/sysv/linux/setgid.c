@@ -18,15 +18,16 @@
 #include <errno.h>
 #include <unistd.h>
 #include <setxid.h>
+#include <fakesyscall.h>
 
 
 int
 __setgid (gid_t gid)
 {
 #ifdef __NR_setgid32
-  return INLINE_SETXID_SYSCALL (setgid32, 1, gid);
+  return syscall (__NR_setgid32, 1, gid);
 #else
-  return INLINE_SETXID_SYSCALL (setgid, 1, gid);
+  return syscall (__NR_setgid, 1, gid);
 #endif
 }
 #ifndef __setgid

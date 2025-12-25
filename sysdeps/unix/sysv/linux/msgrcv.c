@@ -17,13 +17,14 @@
 
 #include <ipc_priv.h>
 #include <sysdep-cancel.h>
+#include <fakesyscall.h>
 
 ssize_t
 __libc_msgrcv (int msqid, void *msgp, size_t msgsz, long int msgtyp,
 	       int msgflg)
 {
 #ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
-  return SYSCALL_CANCEL (msgrcv, msqid, msgp, msgsz, msgtyp, msgflg);
+  return syscall (__NR_msgrcv, msqid, msgp, msgsz, msgtyp, msgflg);
 #else
   return SYSCALL_CANCEL (ipc, IPCOP_msgrcv, msqid, msgsz, msgflg,
 			 MSGRCV_ARGS (msgp, msgtyp));
