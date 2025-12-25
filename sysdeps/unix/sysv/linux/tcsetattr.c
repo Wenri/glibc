@@ -26,7 +26,20 @@ __tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
   struct termios2 k_termios;
   unsigned long cmd;
 
-  memset (&k_termios, 0, sizeof k_termios);
+  switch (optional_actions)
+    {
+    case TCSANOW:
+      cmd = TCSETS;
+      break;
+    case TCSADRAIN:
+      cmd = TCSETSW;
+      break;
+    case TCSAFLUSH:
+      cmd = TCSETS;
+      break;
+    default:
+      return INLINE_SYSCALL_ERROR_RETURN_VALUE (EINVAL);
+    }
 
   k_termios.c_iflag = termios_p->c_iflag;
   k_termios.c_oflag = termios_p->c_oflag;

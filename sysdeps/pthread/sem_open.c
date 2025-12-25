@@ -29,7 +29,7 @@
 
 #if !PTHREAD_IN_LIBC
 /* The private names are not exported from libc.  */
-# define __link link
+# define __symlink symlink
 # define __unlink unlink
 #endif
 
@@ -164,7 +164,7 @@ __sem_open (const char *name, int oflag, ...)
 					 fd, 0)) != MAP_FAILED)
 	{
 	  /* Create the file.  Don't overwrite an existing file.  */
-	  if (__link (tmpfname, dirname.name) != 0)
+	  if (__symlink (tmpfname, dirname.name) != 0)
 	    {
 	      /* Undo the mapping.  */
 	      __munmap (result, sizeof (sem_t));
