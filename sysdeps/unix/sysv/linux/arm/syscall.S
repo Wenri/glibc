@@ -21,7 +21,7 @@
    implement syscall().  It won't work reliably with 64-bit arguments
    (but that is true on many modern platforms).  */
 
-ENTRY (syscall)
+ENTRY (syscallS)
 	mov	ip, sp
 	push	{r4, r5, r6, r7}
 	cfi_adjust_cfa_offset (16)
@@ -45,4 +45,4 @@ ENTRY (syscall)
 	it	cc
 	RETINSTR(cc, lr)
 	b	PLTJMP(syscall_error)
-PSEUDO_END (syscall)
+PSEUDO_END (syscallS)

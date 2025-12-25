@@ -21,7 +21,7 @@
    more information about the value -4095 used below.*/
 
 	.text
-ENTRY (syscall)
+ENTRY (syscallS)
 
 	PUSHARGS_6		/* Save register contents.  */
 	_DOARGS_6(44)		/* Load arguments.  */
@@ -32,4 +32,4 @@ ENTRY (syscall)
 	jae SYSCALL_ERROR_LABEL	/* Jump to error handler if error.  */
 	ret			/* Return to caller.  */
 
-PSEUDO_END (syscall)
+PSEUDO_END (syscallS)
