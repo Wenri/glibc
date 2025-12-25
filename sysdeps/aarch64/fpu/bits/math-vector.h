@@ -135,17 +135,17 @@
 # define __DECL_SIMD_tanhf __DECL_SIMD_aarch64
 #endif
 
-#if __GNUC_PREREQ(9, 0)
+#if __GNUC_PREREQ(9, 0) && !defined(__CUDACC__)
 #  define __ADVSIMD_VEC_MATH_SUPPORTED
 typedef __Float32x4_t __f32x4_t;
 typedef __Float64x2_t __f64x2_t;
-#elif __glibc_clang_prereq(8, 0)
+#elif __glibc_clang_prereq(8, 0) && !defined(__CUDACC__)
 #  define __ADVSIMD_VEC_MATH_SUPPORTED
 typedef __attribute__ ((__neon_vector_type__ (4))) float __f32x4_t;
 typedef __attribute__ ((__neon_vector_type__ (2))) double __f64x2_t;
 #endif
 
-#if __GNUC_PREREQ(10, 0) || __glibc_clang_prereq(11, 0)
+#if (__GNUC_PREREQ(10, 0) || __glibc_clang_prereq(11, 0)) && !defined(__CUDACC__)
 #  define __SVE_VEC_MATH_SUPPORTED
 typedef __SVFloat32_t __sv_f32_t;
 typedef __SVFloat64_t __sv_f64_t;
