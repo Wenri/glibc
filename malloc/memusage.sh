@@ -1,4 +1,4 @@
-#!/bin/bash
+#! @BASH@
 # Copyright (C) 1999-2024 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
