@@ -24,5 +24,6 @@
 #define ADD_PARAMS	uid_t uid
 #define ADD_VARIABLES	uid
 #define BUFLEN		NSS_BUFLEN_PASSWD
+#define ANDROID_SYS	getpwuid_android
 
 #include "../nss/getXXbyYY.c"

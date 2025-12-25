@@ -24,5 +24,6 @@
 #define ADD_PARAMS	const char *name
 #define ADD_VARIABLES	name
 #define BUFLEN		NSS_BUFLEN_GROUP
+#define ANDROID_SYS	getgrnam_android
 
 #include "../nss/getXXbyYY.c"
