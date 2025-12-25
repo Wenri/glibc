@@ -21,5 +21,5 @@
 void *
 __unwind_link_get_resume (void)
 {
-  return UNWIND_LINK_PTR (link (), _Unwind_Resume);
+  return UNWIND_LINK_PTR (link_unwind (), _Unwind_Resume);
 }

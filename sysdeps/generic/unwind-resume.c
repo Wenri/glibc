@@ -21,8 +21,19 @@
 #include <sysdep.h>
 #include <unwind-resume.h>
 
+#ifdef STATIC_STUBS
+# define HAVE_ARCH_UNWIND_RESUME 1
+# define HAVE_GCC_PERSONALITY_V0 1
+#endif
+#ifndef HAVE_ARCH_UNWIND_RESUME
+# define HAVE_ARCH_UNWIND_RESUME 0
+#endif
+#ifndef HAVE_GCC_PERSONALITY_V0
+# define HAVE_GCC_PERSONALITY_V0 0
+#endif
+
 static struct unwind_link *
-link (void)
+link_unwind (void)
 {
   struct unwind_link *unwind_link = __libc_unwind_link_get ();
   if (unwind_link == NULL)
@@ -34,26 +45,28 @@ link (void)
 void
 _Unwind_Resume (struct _Unwind_Exception *exc)
 {
-  UNWIND_LINK_PTR (link (), _Unwind_Resume) (exc);
+  UNWIND_LINK_PTR (link_unwind (), _Unwind_Resume) (exc);
 }
 #endif
 
+#if !HAVE_GCC_PERSONALITY_V0
 _Unwind_Reason_Code
 __gcc_personality_v0 PERSONALITY_PROTO
 {
-  return UNWIND_LINK_PTR (link (), personality) PERSONALITY_ARGS;
+  return UNWIND_LINK_PTR (link_unwind (), personality) PERSONALITY_ARGS;
 }
+#endif
 
 _Unwind_Reason_Code
 _Unwind_ForcedUnwind (struct _Unwind_Exception *exc, _Unwind_Stop_Fn stop,
                       void *stop_argument)
 {
-  return UNWIND_LINK_PTR (link (), _Unwind_ForcedUnwind)
+  return UNWIND_LINK_PTR (link_unwind (), _Unwind_ForcedUnwind)
     (exc, stop, stop_argument);
 }
 
 _Unwind_Word
 _Unwind_GetCFA (struct _Unwind_Context *context)
 {
-  return UNWIND_LINK_PTR (link (), _Unwind_GetCFA) (context);
+  return UNWIND_LINK_PTR (link_unwind (), _Unwind_GetCFA) (context);
 }
