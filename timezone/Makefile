@@ -139,7 +139,8 @@ $(testdata)/XT5: testdata/gen-XT5.sh
 	mv $@.tmp $@
 
 $(objpfx)tzselect: tzselect.ksh $(common-objpfx)config.make
-	sed -e 's|TZDIR=[^}]*|TZDIR=$(zonedir)|' \
+	sed -e 's|/bin/bash|$(BASH)|' \
+	    -e 's|TZDIR=[^}]*|TZDIR=$(zonedir)|' \
 	    -e '/TZVERSION=/s|see_Makefile|"$(version)"|' \
 	    -e '/PKGVERSION=/s|=.*|="$(PKGVERSION)"|' \
 	    -e '/REPORT_BUGS_TO=/s|=.*|="$(REPORT_BUGS_TO)"|' \
