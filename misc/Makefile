@@ -192,6 +192,7 @@ routines := \
   swapon \
   sync \
   syncfs \
+  syscallS \
   syscall \
   syslog \
   truncate \

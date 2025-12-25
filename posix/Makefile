@@ -748,12 +748,17 @@ $(objpfx)tst-glob-tilde-mem.out: $(objpfx)tst-glob-tilde.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-glob-tilde.mtrace > $@; \
 	$(evaluate-test)
 
+ifeq (${TERMUX_ARCH},${TERMUX_REAL_ARCH})
+LIBBIT=
+else
+LIBBIT=32
+endif
 $(inst_libexecdir)/getconf: $(inst_bindir)/getconf \
 			    $(objpfx)getconf.speclist FORCE
 	$(addprefix $(..)./scripts/mkinstalldirs ,\
 		    $(filter-out $(wildcard $@),$@))
 	while read spec; do \
-	  ln -f $< $@/$$spec.new || $(INSTALL_PROGRAM) $< $@/$$spec.new; \
+	  ln -sfr $<$(LIBBIT) $@/$$spec.new; \
 	  mv -f $@/$$spec.new $@/$$spec; \
 	done < $(objpfx)getconf.speclist
 
