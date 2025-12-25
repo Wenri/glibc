@@ -1234,13 +1234,19 @@ send_dg(res_state statp,
 
 		if (thisansp_error) {
 		next_ns:
-		        /* Outside of strict-error mode, use the first
-			   response even if the second response is an
-			   error.  This allows parallel resolution to
-			   succeed even if the recursive resolver
-			   always answers with SERVFAIL for AAAA
-			   queries (which still happens in practice
-			   unfortunately).
+			if (recvresp1 || (buf2 != NULL && recvresp2)) {
+			  *resplen2 = 0;
+			  return resplen;
+			}
+			if (buf2 != NULL && !single_request)
+			  {
+			    /* No data from the first reply.  */
+			    resplen = 0;
+			    /* We are waiting for a possible second reply.  */
+			    if (matching_query == 1)
+			      recvresp1 = 1;
+			    else
+			      recvresp2 = 1;
 
 			   In strict-error mode, always switch to the
 			   next server and try to get a response from

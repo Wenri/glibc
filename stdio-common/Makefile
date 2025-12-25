@@ -280,17 +280,6 @@ tests := \
   tst-fphex \
   tst-fphex-wide \
   tst-fread \
-  tst-freopen2 \
-  tst-freopen3 \
-  tst-freopen4 \
-  tst-freopen5 \
-  tst-freopen6 \
-  tst-freopen64-2 \
-  tst-freopen64-3 \
-  tst-freopen64-4 \
-  tst-freopen64-6 \
-  tst-freopen64-7 \
-  tst-freopen7 \
   tst-fseek \
   tst-fseek-mmap \
   tst-fwrite \
@@ -339,9 +328,7 @@ tests := \
   tst-swscanf \
   tst-tmpnam \
   tst-ungetc \
-  tst-ungetc-fflush \
   tst-ungetc-leak \
-  tst-ungetc-nomem \
   tst-unlockedio \
   tst-vfprintf-mbs-prec \
   tst-vfprintf-user-type \
@@ -577,43 +564,6 @@ tst-scanf-bz27650-ENV = \
 tst-ungetc-leak-ENV = \
   MALLOC_TRACE=$(objpfx)tst-ungetc-leak.mtrace \
   LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-getline-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-getline.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-getline-enomem-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-getline-enomem.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-freopen2-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-freopen2.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-freopen64-2-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-freopen64-2.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-freopen3-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-freopen3.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-freopen64-3-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-freopen64-3.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-freopen4-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-freopen4.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-freopen64-4-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-freopen64-4.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-freopen5-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-freopen5.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-freopen6-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-freopen6.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-tst-freopen64-6-ENV = \
-  MALLOC_TRACE=$(objpfx)tst-freopen64-6.mtrace \
-  LD_PRELOAD=$(common-objpfx)malloc/libc_malloc_debug.so
-
-$(objpfx)tst-fwrite-bz29459.out: tst-fwrite-bz29459.sh $(objpfx)tst-fwrite-bz29459
-	$(SHELL) $< $(common-objpfx) '$(test-program-prefix)'; \
-	$(evaluate-test)
 
 $(objpfx)tst-unbputc.out: tst-unbputc.sh $(objpfx)tst-unbputc
 	$(SHELL) $< $(common-objpfx) '$(test-program-prefix)'; \

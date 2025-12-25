@@ -21,9 +21,8 @@
 
 static const struct data
 {
-  double c0, c2;
-  double c1, c3;
-  float64_t inv_ln2, ln2_hi, ln2_lo, shift;
+  float64_t poly[3];
+  float64_t inv_ln2, ln2_hi, ln2_lo, shift, thres;
   uint64_t special_bound;
 } data = {
   /* Generated using Remez, in [-log(2)/128, log(2)/128].  */
@@ -37,14 +36,28 @@ static const struct data
   .inv_ln2 = 0x1.71547652b82fep+0,
   .shift = 0x1.800000000ff80p+46, /* 1.5*2^46+1022.  */
 
-  /* asuint(ln(2^(1024 - 1/128))), the value above which exp overflows.  */
-  .special_bound = 0x40862e37e7d8ba72,
+  .inv_ln2 = 0x1.71547652b82fep8, /* N/ln2.  */
+  /* -ln2/N.  */
+  .ln2_hi = -0x1.62e42fefa39efp-9,
+  .ln2_lo = -0x1.abc9e3b39803f3p-64,
+  .shift = 0x1.8p+52,
+  .thres = 704.0,
+
+  /* 0x1.6p9, above which exp overflows.  */
+  .special_bound = 0x4086000000000000,
 };
 
-/* Helper for approximating exp(x)/2.
-   Functionally identical to FEXPA exp(x), but an adjustment in
-   the shift value which leads to a reduction in the exponent of scale by 1,
-   thus halving the result at no cost.  */
+static svfloat64_t NOINLINE
+special_case (svfloat64_t x, svbool_t pg, svfloat64_t t, svbool_t special)
+{
+  svfloat64_t half_t = svmul_x (svptrue_b64 (), t, 0.5);
+  svfloat64_t half_over_t = svdivr_x (pg, t, 0.5);
+  svfloat64_t y = svadd_x (pg, half_t, half_over_t);
+  return sv_call_f64 (cosh, x, y, special);
+}
+
+/* Helper for approximating exp(x). Copied from sv_exp_tail, with no
+   special-case handling or tail.  */
 static inline svfloat64_t
 exp_over_two_inline (const svbool_t pg, svfloat64_t x, const struct data *d)
 {
@@ -56,15 +69,14 @@ exp_over_two_inline (const svbool_t pg, svfloat64_t x, const struct data *d)
   svfloat64_t c13 = svld1rq (svptrue_b64 (), &d->c1);
   svfloat64_t ln2 = svld1rq (svptrue_b64 (), &d->ln2_hi);
 
-  svfloat64_t r = x;
-  r = svmls_lane (r, n, ln2, 0);
-  r = svmls_lane (r, n, ln2, 1);
+  svuint64_t u = svreinterpret_u64 (z);
+  svuint64_t e = svlsl_x (pg, u, 52 - V_EXP_TAIL_TABLE_BITS);
+  svuint64_t i = svand_x (svptrue_b64 (), u, 0xff);
 
-  svfloat64_t r2 = svmul_x (svptrue_b64 (), r, r);
-  svfloat64_t p01 = svmla_lane (sv_f64 (d->c0), r, c13, 0);
-  svfloat64_t p23 = svmla_lane (sv_f64 (d->c2), r, c13, 1);
-  svfloat64_t p04 = svmla_x (pg, p01, p23, r2);
-  svfloat64_t p = svmla_x (pg, r, p04, r2);
+  svfloat64_t y = svmla_x (pg, sv_f64 (d->poly[1]), r, d->poly[2]);
+  y = svmla_x (pg, sv_f64 (d->poly[0]), r, y);
+  y = svmla_x (pg, sv_f64 (1.0), r, y);
+  y = svmul_x (svptrue_b64 (), r, y);
 
   svfloat64_t scale = svexpa (u);
 
@@ -122,13 +134,14 @@ svfloat64_t SV_NAME_D1 (cosh) (svfloat64_t x, const svbool_t pg)
   svbool_t special = svcmpgt (pg, svreinterpret_u64 (ax), d->special_bound);
 
   /* Up to the point that exp overflows, we can use it to calculate cosh by
-     (exp(|x|)/2 + 1) / (2 * exp(|x|)).  */
-  svfloat64_t half_exp = exp_over_two_inline (pg, ax, d);
+     exp(|x|) / 2 + 1 / (2 * exp(|x|)).  */
+  svfloat64_t t = exp_inline (ax, pg, d);
 
   /* Falls back to entirely standalone vectorized special case.  */
   if (__glibc_unlikely (svptest_any (pg, special)))
-    return special_case (pg, special, ax, half_exp, d);
+    return special_case (x, pg, t, special);
 
-  svfloat64_t inv_twoexp = svdivr_x (pg, half_exp, 0.25);
-  return svadd_x (pg, half_exp, inv_twoexp);
+  svfloat64_t half_t = svmul_x (svptrue_b64 (), t, 0.5);
+  svfloat64_t half_over_t = svdivr_x (pg, t, 0.5);
+  return svadd_x (pg, half_t, half_over_t);
 }

@@ -19,21 +19,23 @@
 
 #include "sv_math.h"
 
+#define N (1 << V_EXP_TABLE_BITS)
+
 #define BigBound 1022
 #define UOFlowBound 1280
 
 static const struct data
 {
-  double c2, c4;
-  double c0, c1, c3;
+  double c0, c2;
+  double c1, c3;
   double shift, big_bound, uoflow_bound;
 } data = {
   /* Coefficients are computed using Remez algorithm with
      minimisation of the absolute error.  */
-  .c0 = 0x1.62e42fefa39efp-1,  .c1 = 0x1.ebfbdff82a31bp-3,
-  .c2 = 0x1.c6b08d706c8a5p-5,  .c3 = 0x1.3b2ad2ff7d2f3p-7,
-  .c4 = 0x1.5d8761184beb3p-10, .shift = 0x1.800000000ffc0p+46,
-  .uoflow_bound = UOFlowBound, .big_bound = BigBound,
+  .c0 = 0x1.62e42fefa3686p-1, .c1 = 0x1.ebfbdff82c241p-3,
+  .c2 = 0x1.c6b09b16de99ap-5, .c3 = 0x1.3b2abf5571ad8p-7,
+  .shift = 0x1.8p52 / N,      .uoflow_bound = UOFlowBound,
+  .big_bound = BigBound,
 };
 
 #define SpecialOffset 0x6000000000000000 /* 0x1p513.  */
@@ -89,14 +91,14 @@ svfloat64_t SV_NAME_D1 (exp2) (svfloat64_t x, svbool_t pg)
   svfloat64_t r2 = svmul_x (svptrue_b64 (), r, r);
   svfloat64_t c24 = svld1rq (svptrue_b64 (), &d->c2);
 
+  svfloat64_t c13 = svld1rq (svptrue_b64 (), &d->c1);
   /* Approximate exp2(r) using polynomial.  */
-  /* y = exp2(r) - 1 ~= r * (C0 + C1 r + C2 r^2 + C3 r^3 + C4 r^4).  */
-  svfloat64_t p12 = svmla_lane (sv_f64 (d->c1), r, c24, 0);
-  svfloat64_t p34 = svmla_lane (sv_f64 (d->c3), r, c24, 1);
-  svfloat64_t p = svmla_x (pg, p12, p34, r2);
-  p = svmad_x (pg, p, r, d->c0);
+  /* y = exp2(r) - 1 ~= C0 r + C1 r^2 + C2 r^3 + C3 r^4.  */
+  svfloat64_t r2 = svmul_x (svptrue_b64 (), r, r);
+  svfloat64_t p01 = svmla_lane (sv_f64 (d->c0), r, c13, 0);
+  svfloat64_t p23 = svmla_lane (sv_f64 (d->c2), r, c13, 1);
+  svfloat64_t p = svmla_x (pg, p01, p23, r2);
   svfloat64_t y = svmul_x (svptrue_b64 (), r, p);
-
   /* Assemble exp2(x) = exp2(r) * scale.  */
   if (__glibc_unlikely (svptest_any (pg, special)))
     {

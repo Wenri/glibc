@@ -305,14 +305,14 @@ sv_exp_inline (svbool_t pg, svfloat64_t x, svfloat64_t xtail,
       svbool_t oflow = svcmpge (pg, abstop, HugeExp);
       oflow = svand_z (pg, uoflow, svbic_z (pg, oflow, uflow));
 
-      /* Handle underflow and overlow in scale.
-	 For large |x| values (512 < |x| < 1024), scale * (1 + TMP) can
-	 overflow or underflow.  */
+      /* For large |x| values (512 < |x| < 1024) scale * (1 + TMP) can overflow
+    or underflow.  */
       svbool_t special = svbic_z (pg, uoflow, svorr_z (pg, uflow, oflow));
-      if (__glibc_unlikely (svptest_any (pg, special)))
-	z = svsel (special, specialcase (tmp, sbits, ki, special), z);
 
-      /* Handle underflow and overflow in exp.  */
+      /* Update result with special and large cases.  */
+      z = sv_call_specialcase (tmp, sbits, ki, z, special);
+
+      /* Handle underflow and overflow.  */
       svbool_t x_is_neg = svcmplt (pg, x, 0);
       svuint64_t sign_mask
 	  = svlsl_x (pg, sign_bias, 52 - V_POW_EXP_TABLE_BITS);
@@ -432,7 +432,7 @@ svfloat64_t SV_NAME_D2 (pow) (svfloat64_t x, svfloat64_t y, const svbool_t pg)
 
   /* Cases of zero/inf/nan x or y.  */
   if (__glibc_unlikely (svptest_any (svptrue_b64 (), special)))
-    vz = sv_pow_specialcase (x, y, vz, special);
+    vz = sv_call2_f64 (pow_sc, x, y, vz, special);
 
   return vz;
 }

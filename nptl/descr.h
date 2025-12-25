@@ -410,8 +410,21 @@ struct pthread
   /* Used on strsignal.  */
   struct tls_internal_t tls_state;
 
-  /* getrandom vDSO per-thread opaque state.  */
-  void *getrandom_buf;
+  /* rseq area registered with the kernel.  Use a custom definition
+     here to isolate from kernel struct rseq changes.  The
+     implementation of sched_getcpu needs acccess to the cpu_id field;
+     the other fields are unused and not included here.  */
+  union
+  {
+    struct
+    {
+      uint32_t cpu_id_start;
+      uint32_t cpu_id;
+      uint64_t rseq_cs;
+      uint32_t flags;
+    };
+    char pad[32];		/* Original rseq area size.  */
+  } rseq_area __attribute__ ((aligned (32)));
 
   /* Amount of end padding, if any, in this structure.
      This definition relies on getrandom_buf being last.  */

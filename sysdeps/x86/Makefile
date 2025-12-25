@@ -101,17 +101,9 @@ CFLAGS-tst-gnu2-tls2mod0.c += -msse2 -mtune=haswell
 CFLAGS-tst-gnu2-tls2mod1.c += -msse2 -mtune=haswell
 CFLAGS-tst-gnu2-tls2mod2.c += -msse2 -mtune=haswell
 
-LDFLAGS-tst-gnu2-tls2 += -rdynamic
-LDFLAGS-tst-gnu2-tls2mod0.so += -Wl,-z,undefs
-LDFLAGS-tst-gnu2-tls2mod1.so += -Wl,-z,undefs
-LDFLAGS-tst-gnu2-tls2mod2.so += -Wl,-z,undefs
-
-CFLAGS-tst-gnu2-tls2-x86-noxsave.c += -msse2
-CFLAGS-tst-gnu2-tls2-x86-noxsavec.c += -msse2
-CFLAGS-tst-gnu2-tls2-x86-noxsavexsavec.c += -msse2
-LDFLAGS-tst-gnu2-tls2-x86-noxsave += -Wl,-z,lazy -rdynamic
-LDFLAGS-tst-gnu2-tls2-x86-noxsavec += -Wl,-z,lazy -rdynamic
-LDFLAGS-tst-gnu2-tls2-x86-noxsavexsavec += -Wl,-z,lazy -rdynamic
+LDFLAGS-tst-gnu2-tls2-x86-noxsave += -Wl,-z,lazy
+LDFLAGS-tst-gnu2-tls2-x86-noxsavec += -Wl,-z,lazy
+LDFLAGS-tst-gnu2-tls2-x86-noxsavexsavec += -Wl,-z,lazy
 
 # Test for bug 32810: incorrect XSAVE state size if XSAVEC is disabled
 # via tunable.
@@ -127,27 +119,6 @@ $(objpfx)tst-gnu2-tls2-x86-noxsavexsavec.out: \
   $(objpfx)tst-gnu2-tls2mod0.so \
   $(objpfx)tst-gnu2-tls2mod1.so \
   $(objpfx)tst-gnu2-tls2mod2.so
-
-CFLAGS-tst-tls23.c += -msse2
-CFLAGS-tst-tls23-mod.c += -msse2 -mtune=haswell
-
-LDFLAGS-tst-tls23 += -rdynamic
-tst-tls23-mod.so-no-z-defs = yes
-
-$(objpfx)tst-tls23-mod.so: $(libsupport)
-
-tests-special += $(objpfx)check-gnu2-tls.out
-
-$(objpfx)check-gnu2-tls.out: $(common-objpfx)libc.so
-	LC_ALL=C $(READELF) -V -W $< \
-		| sed -ne '/.gnu.version_d/, /.gnu.version_r/ p' \
-		| grep GLIBC_ABI_GNU2_TLS > $@; \
-	$(evaluate-test)
-generated += check-gnu2-tls.out
-endif
-
-ifeq ($(subdir),gmon)
-CFLAGS-mcount.c += -mgeneral-regs-only
 endif
 
 ifeq ($(subdir),math)

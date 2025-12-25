@@ -1,5 +1,5 @@
 /* Generic optimized memset using SIMD.
-   Copyright (C) 2012-2025 Free Software Foundation, Inc.
+   Copyright (C) 2012-2024 Free Software Foundation, Inc.
 
    This file is part of the GNU C Library.
 
@@ -30,6 +30,7 @@
  */
 
 #define dstin	x0
+#define val	x1
 #define valw	w1
 #define count	x2
 #define dst	x3
@@ -39,6 +40,9 @@
 #define dstend2	x5
 
 ENTRY (MEMSET)
+	PTR_ARG (0)
+	SIZE_ARG (2)
+
 	dup	v0.16B, valw
 	cmp	count, 16
 	b.lo	L(set_small)

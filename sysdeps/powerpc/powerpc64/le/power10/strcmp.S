@@ -64,6 +64,7 @@ ENTRY_TOCLESS (STRCMP, 4)
 	/* eq bit of cr1 used as swap status flag to indicate if
 	source pointers were swapped.  */
 	crclr	 4*cr1+eq
+	vspltisb v19,-1
 	andi.	 r7,r3,15
 	sub	 r7,r11,r7	/* r7(nalign1) = 16 - (str1 & 15).  */
 	andi.	 r9,r4,15

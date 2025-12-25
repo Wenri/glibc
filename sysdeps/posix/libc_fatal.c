@@ -18,6 +18,18 @@
 
 #include <assert.h>
 #include <ldsodefs.h>
+#include <libc-pointer-arith.h>
+#include <paths.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sysdep.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/uio.h>
+#include <not-cancel.h>
 #include <setvmaname.h>
 #include <stdarg.h>
 #include <stdio.h>

@@ -1,4 +1,5 @@
-/* Copyright (C) 2025 Free Software Foundation, Inc.
+/* mremap failure handling.  Linux version.
+   Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,19 +16,15 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <limits.h>
-#include <stdlib.h>
+#include <support/check.h>
 
-#undef	ulabs
+/* Return exit value on mremap failure with errno ERR.  */
 
-/* Return the absolute value of I.  */
-unsigned long int
-ulabs (long int i)
+static int
+mremap_failure_exit (int err)
 {
-  unsigned long int j = i;
-  return i < 0 ? -j : i;
-}
+  if (err != EINVAL)
+    return EXIT_FAILURE;
 
-#if ULONG_MAX != UINT_MAX
-weak_alias (ulabs, uimaxabs)
-#endif
+  return EXIT_UNSUPPORTED;
+}
