@@ -123,6 +123,25 @@ calculate_head_size (const struct locarhead *h)
   return MAX (namehash_end, MAX (string_end, locrectab_end));
 }
 
+static int
+open_locale_archive (void)
+{
+  int fd = -1;
+  char *versioned_path = secure_getenv ("LOCALE_ARCHIVE_2_27");
+  char *path = secure_getenv ("LOCALE_ARCHIVE");
+  if (versioned_path)
+    fd = __open_nocancel (versioned_path, O_RDONLY|O_LARGEFILE|O_CLOEXEC);
+  if (path && fd < 0)
+    fd = __open_nocancel (path, O_RDONLY|O_LARGEFILE|O_CLOEXEC);
+  if (fd < 0)
+    fd = __open_nocancel("/run/current-system/sw/lib/locale/locale-archive", O_RDONLY|O_LARGEFILE|O_CLOEXEC);
+  if (fd < 0)
+    fd = __open_nocancel ("/usr/lib/locale/locale-archive", O_RDONLY|O_LARGEFILE|O_CLOEXEC);
+  if (fd < 0)
+    fd = __open_nocancel (archfname, O_RDONLY|O_LARGEFILE|O_CLOEXEC);
+  return fd;
+}
+
 
 /* Find the locale *NAMEP in the locale archive, and return the
    internalized data structure for its CATEGORY data.  If this locale has
@@ -202,7 +221,7 @@ _nl_load_locale_from_archive (int category, const char **namep)
       archmapped = &headmap;
 
       /* The archive has never been opened.  */
-      fd = __open_nocancel (archfname, O_RDONLY|O_LARGEFILE|O_CLOEXEC);
+      fd = open_locale_archive ();
       if (fd < 0)
 	/* Cannot open the archive, for whatever reason.  */
 	return NULL;
@@ -397,8 +416,7 @@ _nl_load_locale_from_archive (int category, const char **namep)
 	  if (fd == -1)
 	    {
 	      struct __stat64_t64 st;
-	      fd = __open_nocancel (archfname,
-				    O_RDONLY|O_LARGEFILE|O_CLOEXEC);
+	      fd = open_locale_archive();
 	      if (fd == -1)
 		/* Cannot open the archive, for whatever reason.  */
 		return NULL;

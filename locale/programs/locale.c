@@ -633,6 +633,26 @@ nameentcmp (const void *a, const void *b)
 
 
 static int
+open_locale_archive (void)
+{
+  int fd = -1;
+  char *versioned_path = secure_getenv ("LOCALE_ARCHIVE_2_27");
+  char *path = secure_getenv ("LOCALE_ARCHIVE");
+  if (versioned_path)
+    fd = open64 (versioned_path, O_RDONLY);
+  if (path && fd < 0)
+    fd = open64 (path, O_RDONLY);
+  if (fd < 0)
+    fd = open64 ("/run/current-system/sw/lib/locale/locale-archive", O_RDONLY|O_LARGEFILE|O_CLOEXEC);
+  if (fd < 0)
+    fd = open64 ("/usr/lib/locale/locale-archive", O_RDONLY);
+  if (fd < 0)
+    fd = open64 (ARCHIVE_NAME, O_RDONLY);
+  return fd;
+}
+
+
+static int
 write_archive_locales (void **all_datap, char *linebuf)
 {
   struct stat64 st;
@@ -644,7 +664,7 @@ write_archive_locales (void **all_datap, char *linebuf)
   int fd, ret = 0;
   uint32_t cnt;
 
-  fd = open64 (ARCHIVE_NAME, O_RDONLY);
+  fd = open_locale_archive ();
   if (fd < 0)
     return 0;
 
