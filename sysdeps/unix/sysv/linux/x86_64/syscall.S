@@ -26,7 +26,7 @@
 
 
 	.text
-ENTRY (syscall)
+ENTRY (syscallS)
 	movq %rdi, %rax		/* Syscall number -> rax.  */
 	movq %rsi, %rdi		/* shift arg1 - arg5.  */
 	movq %rdx, %rsi
@@ -39,4 +39,4 @@ ENTRY (syscall)
 	jae SYSCALL_ERROR_LABEL	/* Jump to error handler if error.  */
 	ret			/* Return to caller.  */
 
-PSEUDO_END (syscall)
+PSEUDO_END (syscallS)
