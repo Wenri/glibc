@@ -17,6 +17,7 @@
    <https://www.gnu.org/licenses/>.  */
 
 #include <signal.h>
+#include <disabled-syscall.h>
 #define SA_RESTORER 0x04000000
 
 extern void restore_rt (void) asm ("__restore_rt") attribute_hidden;
