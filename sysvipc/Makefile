@@ -28,6 +28,7 @@ headers	:= sys/ipc.h sys/msg.h sys/sem.h sys/shm.h \
 routines := ftok \
 	    msgsnd msgrcv msgget msgctl \
 	    semop semget semctl semtimedop \
+	    shmem-android \
 	    shmat shmdt shmget shmctl
 
 tests    := test-sysvmsg test-sysvsem test-sysvshm
