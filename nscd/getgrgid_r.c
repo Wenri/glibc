@@ -27,6 +27,7 @@
 
 #define DEEPCOPY_FN	__copy_grp
 #define MERGE_FN	__merge_grp
+#define ANDROID_SYS	getgrgid_android
 
 /* We are nscd, so we don't want to be talking to ourselves.  */
 #undef	USE_NSCD
