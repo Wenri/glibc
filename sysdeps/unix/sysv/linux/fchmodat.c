@@ -26,7 +26,6 @@
 #include <sysdep.h>
 #include <unistd.h>
 
-#if !__ASSUME_FCHMODAT2
 static int
 fchmodat_fallback (int fd, const char *file, mode_t mode, int flag)
 {
@@ -85,21 +84,13 @@ fchmodat_fallback (int fd, const char *file, mode_t mode, int flag)
   __close_nocancel (pathfd);
   return ret;
 }
-#endif
 
 int
 fchmodat (int fd, const char *file, mode_t mode, int flag)
 {
-#if __ASSUME_FCHMODAT2
-  return INLINE_SYSCALL_CALL (fchmodat2, fd, file, mode, flag);
-#else
   if (flag == 0)
     return INLINE_SYSCALL_CALL (fchmodat, fd, file, mode);
 
-  int r = INLINE_SYSCALL_CALL (fchmodat2, fd, file, mode, flag);
-  if (r != 0 && errno == ENOSYS)
-    return fchmodat_fallback (fd, file, mode, flag);
-  return r;
-#endif
+  return fchmodat_fallback (fd, file, mode, flag);
 }
 libc_hidden_def (fchmodat)

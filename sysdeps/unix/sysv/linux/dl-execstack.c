@@ -35,7 +35,7 @@ make_main_stack_executable (void **stack_endp)
 		    & -(intptr_t) GLRO(dl_pagesize));
 
   if (__mprotect ((void *) page, GLRO(dl_pagesize),
-		  PROT_READ | PROT_WRITE | PROT_EXEC
+		  PROT_READ | PROT_WRITE
 #if _STACK_GROWS_DOWN
 		  | PROT_GROWSDOWN
 #elif _STACK_GROWS_UP
