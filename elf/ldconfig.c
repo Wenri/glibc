@@ -47,7 +47,7 @@
 
 
 #ifndef LD_SO_CONF
-# define LD_SO_CONF SYSCONFDIR "/ld.so.conf"
+# define LD_SO_CONF PREFIX "/etc/ld.so.conf"
 #endif
 
 /* Get libc version number.  */
