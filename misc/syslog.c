@@ -1,433 +1,543 @@
 /*
- * Copyright (c) 1983, 1988, 1993
- *	The Regents of the University of California.  All rights reserved.
+ * Refactored syslog.c that can work with the Android
+ * log system (/dev/socket/logdw). It consists of functions
+ * that were taken from the following bionic scripts:
+ * - syslog.cpp (https://cs.android.com/android/platform/superproject/main/+/main:bionic/libc/bionic/syslog.cpp)
+ * - async_safe_log.cpp (https://cs.android.com/android/platform/superproject/main/+/main:bionic/libc/async_safe/async_safe_log.cpp)
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 4. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * Addition: in the future it is planned to implement
+ * two types of syslog: one will work with android (bionic
+ * implementation), the other will work with termux+systemd
+ * environment (glibc implementation).
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
-static char sccsid[] = "@(#)syslog.c	8.4 (Berkeley) 3/18/94";
-#endif /* LIBC_SCCS and not lint */
-
-#include <libio/libioP.h>
-#include <paths.h>
-#include <stdarg.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <stdio_ext.h>
-#include <sys/socket.h>
-#include <sys/uio.h>
-#include <sys/un.h>
+#include <stdlib.h>
 #include <syslog.h>
-#include <limits.h>
+#include <string.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <sys/uio.h>
+#include <sys/syscall.h>
+#include <sys/socket.h>
+#include <time.h>
+#include <linux/un.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <errno.h>
+#include <ctype.h>
+#include <assert.h>
+#include <libio/libioP.h>
 
-static int LogType = SOCK_DGRAM;	/* type of socket connection */
-static int LogFile = -1;		/* fd for log */
-static bool connected;			/* have done connect */
-static int LogStat;			/* status bits, set by openlog() */
-static const char *LogTag;		/* string to tag the entry with */
-static int LogFacility = LOG_USER;	/* default facility code */
-static int LogMask = 0xff;		/* mask of priorities to be logged */
-extern char *__progname;		/* Program name, from crt0. */
+#define ANDROID_LOG_VERBOSE 2 // not used :/
+#define ANDROID_LOG_DEBUG 3
+#define ANDROID_LOG_INFO 4
+#define ANDROID_LOG_WARN 5
+#define ANDROID_LOG_ERROR 6
+#define ANDROID_LOG_FATAL 7
 
-/* Define the lock.  */
-__libc_lock_define_initialized (static, syslog_lock)
-static void openlog_internal (const char *, int, int);
-static void closelog_internal (void);
+#define LOG_ID_CRASH 4
+#define LOG_ID_MAIN 0
 
-struct cleanup_arg
-{
-  void *buf;
-  struct sigaction *oldaction;
+static const char* syslog_log_tag = NULL;
+static int syslog_priority_mask = 0xff;
+static int syslog_options = 0;
+extern char *__progname;
+
+typedef struct log_time {
+	uint32_t tv_sec;
+	uint32_t tv_nsec;
+} __attribute__((__packed__)) log_time;
+
+struct BufferOutputStream {
+	size_t total;
+	char* pos_;
+	size_t avail_;
 };
 
-static void
-cancel_handler (void *ptr)
-{
-  /* Restore the old signal handler.  */
-  struct cleanup_arg *clarg = (struct cleanup_arg *) ptr;
-
-  if (clarg != NULL)
-    /* Free the memstream buffer,  */
-    free (clarg->buf);
-
-  /* Free the lock.  */
-  __libc_lock_unlock (syslog_lock);
+struct BufferOutputStream BufferOutput(char* buffer, size_t size) {
+	struct BufferOutputStream buff;
+	buff.total = 0;
+	buff.pos_ = buffer;
+	buff.avail_ = size;
+	if (buff.avail_ > 0)
+		buff.pos_[0] = '\0';
+	return buff;
 }
 
+void Send(struct BufferOutputStream* buff, const char* data, int len) {
+	if (len < 0)
+		len = strlen(data);
+	buff->total += len;
 
-/*
- * syslog, vsyslog --
- *	print message on log file; output is intended for syslogd(8).
- */
-void
-__syslog (int pri, const char *fmt, ...)
-{
-  va_list ap;
-
-  va_start (ap, fmt);
-  __vsyslog_internal (pri, fmt, ap, 0);
-  va_end (ap);
-}
-ldbl_hidden_def (__syslog, syslog)
-ldbl_strong_alias (__syslog, syslog)
-
-void
-__vsyslog (int pri, const char *fmt, va_list ap)
-{
-  __vsyslog_internal (pri, fmt, ap, 0);
-}
-ldbl_weak_alias (__vsyslog, vsyslog)
-
-void
-___syslog_chk (int pri, int flag, const char *fmt, ...)
-{
-  va_list ap;
-
-  va_start (ap, fmt);
-  __vsyslog_internal (pri, fmt, ap, (flag > 0) ? PRINTF_FORTIFY : 0);
-  va_end (ap);
-}
-ldbl_hidden_def (___syslog_chk, __syslog_chk)
-ldbl_strong_alias (___syslog_chk, __syslog_chk)
-
-void
-__vsyslog_chk (int pri, int flag, const char *fmt, va_list ap)
-{
-  __vsyslog_internal (pri, fmt, ap, (flag > 0) ? PRINTF_FORTIFY : 0);
-}
-
-void
-__vsyslog_internal (int pri, const char *fmt, va_list ap,
-		    unsigned int mode_flags)
-{
-  /* Try to use a static buffer as an optimization.  */
-  char bufs[1024];
-  char *buf = bufs;
-  size_t bufsize;
-
-  int msgoff;
-  int saved_errno = errno;
-
-#define	INTERNALLOG LOG_ERR|LOG_CONS|LOG_PERROR|LOG_PID
-  /* Check for invalid bits. */
-  if (pri & ~(LOG_PRIMASK | LOG_FACMASK))
-    {
-      syslog (INTERNALLOG, "syslog: unknown facility/priority: %x", pri);
-      pri &= LOG_PRIMASK | LOG_FACMASK;
-    }
-
-  /* Prepare for multiple users.  We have to take care: most syscalls we are
-     using are cancellation points.  */
-  struct cleanup_arg clarg = { NULL, NULL };
-  __libc_cleanup_push (cancel_handler, &clarg);
-  __libc_lock_lock (syslog_lock);
-
-  /* Check priority against setlogmask values. */
-  if ((LOG_MASK (LOG_PRI (pri)) & LogMask) == 0)
-    goto out;
-
-  /* Set default facility if none specified. */
-  if ((pri & LOG_FACMASK) == 0)
-    pri |= LogFacility;
-
-  pid_t pid = LogStat & LOG_PID ? __getpid () : 0;
-
-  /* "%b %e %H:%M:%S "  */
-  char timestamp[sizeof "MMM DD hh:mm:ss "];
-  __time64_t now = time64_now ();
-  struct tm now_tm;
-  struct tm *now_tmp = __localtime64_r (&now, &now_tm);
-  bool has_ts = now_tmp != NULL;
-
-  /* In the unlikely case of localtime_r failure (tm_year out of int range)
-     skip the hostname so the message is handled as valid PRI but without
-     TIMESTAMP or invalid TIMESTAMP (which should force the relay to add the
-     timestamp itself).  */
-  if (has_ts)
-    __strftime_l (timestamp, sizeof timestamp, "%h %e %T ", now_tmp,
-		  _nl_C_locobj_ptr);
-
-#define SYSLOG_HEADER(__pri, __timestamp, __msgoff, pid) \
-  "<%d>%s%n%s%s%.0d%s: ",                                \
-  __pri, __timestamp, __msgoff,                          \
-  LogTag == NULL ? __progname : LogTag,                  \
-  "[" + (pid == 0), pid, "]" + (pid == 0)
-
-#define SYSLOG_HEADER_WITHOUT_TS(__pri, __msgoff)        \
-  "<%d>: %n", __pri, __msgoff
-
-  int l, vl;
-  if (has_ts)
-    l = __snprintf (bufs, sizeof bufs,
-		    SYSLOG_HEADER (pri, timestamp, &msgoff, pid));
-  else
-    l = __snprintf (bufs, sizeof bufs,
-		    SYSLOG_HEADER_WITHOUT_TS (pri, &msgoff));
-  if (l < 0)
-    goto out;
-
-  char *pos;
-  size_t len;
-
-  if (l < sizeof bufs)
-    {
-      /* At this point, there is still a chance that we can print the
-         remaining part of the log into bufs and use that.  */
-      pos = bufs + l;
-      len = sizeof (bufs) - l;
-    }
-  else
-    {
-      buf = NULL;
-      /* We already know that bufs is too small to use for this log message.
-         The next vsnprintf into bufs is used only to calculate the total
-         required buffer length.  We will discard bufs contents and allocate
-         an appropriately sized buffer later instead.  */
-      pos = bufs;
-      len = sizeof (bufs);
-    }
-
-  {
-    va_list apc;
-    va_copy (apc, ap);
-
-    /* Restore errno for %m format.  */
-    __set_errno (saved_errno);
-
-    vl = __vsnprintf_internal (pos, len, fmt, apc, mode_flags);
-    va_end (apc);
-
-    if (vl < 0 || vl >= INT_MAX - l)
-      goto out;
-
-    if (vl >= len)
-      buf = NULL;
-
-    bufsize = l + vl;
-  }
-
-  if (buf == NULL)
-    {
-      buf = malloc ((bufsize + 1) * sizeof (char));
-      if (buf != NULL)
-	{
-	  /* Tell the cancellation handler to free this buffer.  */
-	  clarg.buf = buf;
-
-	  int cl;
-	  if (has_ts)
-	    cl = __snprintf (buf, l + 1,
-			     SYSLOG_HEADER (pri, timestamp, &msgoff, pid));
-	  else
-	    cl = __snprintf (buf, l + 1,
-			     SYSLOG_HEADER_WITHOUT_TS (pri, &msgoff));
-	  if (cl != l)
-	    goto out;
-
-	  va_list apc;
-	  va_copy (apc, ap);
-	  cl = __vsnprintf_internal (buf + l, bufsize - l + 1, fmt, apc,
-				     mode_flags);
-	  va_end (apc);
-
-	  if (cl != vl)
-	    goto out;
-	}
-      else
-        {
-          int bl;
-	  /* Nothing much to do but emit an error message.  */
-          bl = __snprintf (bufs, sizeof bufs,
-                           "out of memory[%d]", __getpid ());
-          if (bl < 0 || bl >= sizeof bufs)
-            goto out;
-
-          bufsize = bl;
-          buf = bufs;
-          msgoff = 0;
-        }
-    }
-
-  /* Output to stderr if requested. */
-  if (LogStat & LOG_PERROR)
-    __dprintf (STDERR_FILENO, "%s%s", buf + msgoff,
-	       "\n" + (buf[bufsize - 1] == '\n'));
-
-  /* Get connected, output the message to the local logger.  */
-  if (!connected)
-    openlog_internal (NULL, LogStat | LOG_NDELAY, LogFacility);
-
-  /* If we have a SOCK_STREAM connection, also send ASCII NUL as a record
-     terminator.  */
-  if (LogType == SOCK_STREAM)
-    ++bufsize;
-
-  if (!connected || __send (LogFile, buf, bufsize, MSG_NOSIGNAL) < 0)
-    {
-      if (connected)
-	{
-	  /* Try to reopen the syslog connection.  Maybe it went down.  */
-	  closelog_internal ();
-	  openlog_internal (NULL, LogStat | LOG_NDELAY, LogFacility);
-	}
-
-      if (!connected || __send (LogFile, buf, bufsize, MSG_NOSIGNAL) < 0)
-	{
-	  closelog_internal ();	/* attempt re-open next time */
-	  /*
-	   * Output the message to the console; don't worry
-	   * about blocking, if console blocks everything will.
-	   * Make sure the error reported is the one from the
-	   * syslogd failure.
-	   */
-	  int fd;
-	  if (LogStat & LOG_CONS &&
-	      (fd = __open (_PATH_CONSOLE, O_WRONLY | O_NOCTTY
-			    | O_CLOEXEC, 0)) >= 0)
-	    {
-	      __dprintf (fd, "%s\r\n", buf + msgoff);
-	      __close (fd);
-	    }
-	}
-    }
-
-out:
-  /* End of critical section.  */
-  __libc_cleanup_pop (0);
-  __libc_lock_unlock (syslog_lock);
-
-  if (buf != bufs)
-    free (buf);
-}
-
-/* AF_UNIX address of local logger  */
-static const struct sockaddr_un SyslogAddr =
-  {
-    .sun_family = AF_UNIX,
-    .sun_path = _PATH_LOG
-  };
-
-static void
-openlog_internal (const char *ident, int logstat, int logfac)
-{
-  if (ident != NULL)
-    LogTag = ident;
-  LogStat = logstat;
-  if ((logfac & ~LOG_FACMASK) == 0)
-    LogFacility = logfac;
-
-  int retry = 0;
-  while (retry < 2)
-    {
-      if (LogFile == -1)
-	{
-	  if (LogStat & LOG_NDELAY)
-	    {
-	      LogFile = __socket (AF_UNIX, LogType | SOCK_CLOEXEC, 0);
-	      if (LogFile == -1)
+	if (buff->avail_ <= 1)
+		// No space to put anything else.
 		return;
-	    }
+
+	if ((size_t)len >= buff->avail_)
+		len = buff->avail_ - 1;
+	memcpy(buff->pos_, data, len);
+	buff->pos_ += len;
+	buff->pos_[0] = '\0';
+	buff->avail_ -= len;
+}
+
+static unsigned parse_decimal(const char* format, int* ppos) {
+	const char* p = format + *ppos;
+	unsigned result = 0;
+
+	for (;;) {
+		int ch = *p;
+		unsigned d = (unsigned)(ch - '0');
+
+		if (d >= 10U)
+			break;
+
+		result = result * 10 + d;
+		p++;
 	}
-      if (LogFile != -1 && !connected)
-	{
-	  int old_errno = errno;
-	  if (__connect (LogFile, &SyslogAddr, sizeof (SyslogAddr)) == -1)
-	    {
-	      int saved_errno = errno;
-	      int fd = LogFile;
-	      LogFile = -1;
-	      __close (fd);
-	      __set_errno (old_errno);
-	      if (saved_errno == EPROTOTYPE)
-		{
-		  /* retry with the other type: */
-		  LogType = LogType == SOCK_DGRAM ? SOCK_STREAM : SOCK_DGRAM;
-		  ++retry;
-		  continue;
+	*ppos = p - format;
+	return result;
+}
+
+static void format_unsigned(char* buf, size_t buf_size, uint64_t value, int base, bool caps) {
+	char* p = buf;
+	char* end = buf + buf_size - 1;
+
+	// Generate digit string in reverse order.
+	while (value) {
+		unsigned d = value % base;
+		value /= base;
+		if (p != end) {
+			char ch;
+			if (d < 10)
+				ch = '0' + d;
+			else
+				ch = (caps ? 'A' : 'a') + (d - 10);
+			*p++ = ch;
 		}
-	    }
-	  else
-	    connected = true;
 	}
-      break;
-    }
+
+	// Special case for 0.
+	if (p == buf)
+		if (p != end)
+			*p++ = '0';
+	*p = '\0';
+
+	// Reverse digit string in-place.
+	size_t length = p - buf;
+	for (size_t i = 0, j = length - 1; i < j; ++i, --j) {
+		char ch = buf[i];
+		buf[i] = buf[j];
+		buf[j] = ch;
+	}
 }
 
-void
-openlog (const char *ident, int logstat, int logfac)
-{
-  /* Protect against multiple users and cancellation.  */
-  __libc_cleanup_push (cancel_handler, NULL);
-  __libc_lock_lock (syslog_lock);
+static void format_integer(char* buf, size_t buf_size, uint64_t value, char conversion) {
+	// Decode the conversion specifier.
+	int is_signed = (conversion == 'd' || conversion == 'i' || conversion == 'o');
+	int base = 10;
+	if (tolower(conversion) == 'x')
+		base = 16;
+	else if (conversion == 'o')
+		base = 8;
+	else if (tolower(conversion) == 'b')
+		base = 2;
+	bool caps = (conversion == 'X');
 
-  openlog_internal (ident, logstat, logfac);
-
-  __libc_cleanup_pop (1);
+	if (is_signed && (int64_t)value < 0) {
+		buf[0] = '-';
+		buf += 1;
+		buf_size -= 1;
+		value = (uint64_t)(-(int64_t)value);
+	}
+	format_unsigned(buf, buf_size, value, base, caps);
 }
 
-static void
-closelog_internal (void)
-{
-  if (!connected)
-    return;
+static void SendRepeat(struct BufferOutputStream* buff, char ch, int count) {
+	char pad[8];
+	memset(pad, ch, sizeof(pad));
 
-  __close (LogFile);
-  LogFile = -1;
-  connected = false;
+	const int pad_size = (int)sizeof(pad);
+	while (count > 0) {
+		int avail = count;
+		if (avail > pad_size)
+			avail = pad_size;
+		Send(buff, pad, avail);
+		count -= avail;
+	}
 }
 
-void
-closelog (void)
-{
-  /* Protect against multiple users and cancellation.  */
-  __libc_cleanup_push (cancel_handler, NULL);
-  __libc_lock_lock (syslog_lock);
+static void out_vformat(struct BufferOutputStream* buff, const char* format, va_list args) {
+	int nn = 0;
 
-  closelog_internal ();
-  LogTag = NULL;
-  LogType = SOCK_DGRAM; /* this is the default */
+	for (;;) {
+		int mm;
+		int padZero = 0;
+		int padLeft = 0;
+		char sign = '\0';
+		int width = -1;
+		int prec = -1;
+		bool alternate = false;
+		size_t bytelen = sizeof(int);
+		int slen;
+		char buffer[64];	// temporary buffer used to format numbers/format errno string
 
-  /* Free the lock.  */
-  __libc_cleanup_pop (1);
+		char c;
+
+		/* first, find all characters that are not 0 or '%' */
+		/* then send them to the output directly */
+		mm = nn;
+		do {
+			c = format[mm];
+			if (c == '\0' || c == '%') break;
+			mm++;
+		} while (1);
+
+		if (mm > nn) {
+			Send(buff, format + nn, mm - nn);
+			nn = mm;
+		}
+
+		/* is this it ? then exit */
+		if (c == '\0') break;
+
+		/* nope, we are at a '%' modifier */
+		nn++;	// skip it
+
+		/* parse flags */
+		for (;;) {
+			c = format[nn++];
+			if (c == '\0') { /* single trailing '%' ? */
+				c = '%';
+				Send(buff, &c, 1);
+				return;
+			} else if (c == '0') {
+				padZero = 1;
+				continue;
+			} else if (c == '-') {
+				padLeft = 1;
+				continue;
+			} else if (c == ' ' || c == '+') {
+				sign = c;
+				continue;
+			} else if (c == '#') {
+				alternate = true;
+				continue;
+			}
+			break;
+		}
+
+		/* parse field width */
+		if ((c >= '0' && c <= '9')) {
+			nn--;
+			width = (int)parse_decimal(format, &nn);
+			c = format[nn++];
+		}
+
+		/* parse precision */
+		if (c == '.') {
+			prec = (int)parse_decimal(format, &nn);
+			c = format[nn++];
+		}
+
+		/* length modifier */
+		switch (c) {
+			case 'h':
+				bytelen = sizeof(short);
+				if (format[nn] == 'h') {
+					bytelen = sizeof(char);
+					nn += 1;
+				}
+				c = format[nn++];
+				break;
+			case 'l':
+				bytelen = sizeof(long);
+				if (format[nn] == 'l') {
+					bytelen = sizeof(long long);
+					nn += 1;
+				}
+				c = format[nn++];
+				break;
+			case 'z':
+				bytelen = sizeof(size_t);
+				c = format[nn++];
+				break;
+			case 't':
+				bytelen = sizeof(ptrdiff_t);
+				c = format[nn++];
+				break;
+			default:;
+		}
+
+		/* conversion specifier */
+		const char* str = buffer;
+		if (c == 's') {
+			/* string */
+			str = va_arg(args, const char*);
+		} else if (c == 'c') {
+			/* character */
+			/* NOTE: char is promoted to int when passed through the stack */
+			buffer[0] = (char)va_arg(args, int);
+			buffer[1] = '\0';
+		} else if (c == 'p') {
+			uint64_t value = (uintptr_t)va_arg(args, void*);
+			buffer[0] = '0';
+			buffer[1] = 'x';
+			format_integer(buffer + 2, sizeof(buffer) - 2, value, 'x');
+		} else if (c == 'm') {
+			{
+				strerror_r(errno, buffer, sizeof(buffer));
+			}
+		} else if (tolower(c) == 'b' || c == 'd' || c == 'i' || c == 'o' || c == 'u' ||
+							 tolower(c) == 'x') {
+			/* integers - first read value from stack */
+			uint64_t value;
+			int is_signed = (c == 'd' || c == 'i' || c == 'o');
+
+			/* NOTE: int8_t and int16_t are promoted to int when passed
+			 *			 through the stack
+			 */
+			switch (bytelen) {
+				case 1:
+					value = (uint8_t)va_arg(args, int);
+					break;
+				case 2:
+					value = (uint16_t)va_arg(args, int);
+					break;
+				case 4:
+					value = va_arg(args, uint32_t);
+					break;
+				case 8:
+					value = va_arg(args, uint64_t);
+					break;
+				default:
+					return; /* should not happen */
+			}
+
+			/* sign extension, if needed */
+			if (is_signed) {
+				int shift = 64 - 8 * bytelen;
+				value = (uint64_t)(((int64_t)(value << shift)) >> shift);
+			}
+
+			if (alternate && value != 0 && (tolower(c) == 'x' || c == 'o' || tolower(c) == 'b')) {
+				if (tolower(c) == 'x' || tolower(c) == 'b') {
+					buffer[0] = '0';
+					buffer[1] = c;
+					format_integer(buffer + 2, sizeof(buffer) - 2, value, c);
+				} else {
+					buffer[0] = '0';
+					format_integer(buffer + 1, sizeof(buffer) - 1, value, c);
+				}
+			} else
+				/* format the number properly into our buffer */
+				format_integer(buffer, sizeof(buffer), value, c);
+		} else if (c == '%') {
+			buffer[0] = '%';
+			buffer[1] = '\0';
+		} else
+			__assert("conversion specifier unsupported", __FILE__, __LINE__);
+
+		if (str == NULL)
+			str = "(null)";
+
+		/* if we are here, 'str' points to the content that must be
+		 * outputted. handle padding and alignment now */
+
+		slen = strlen(str);
+
+		if (sign != '\0' || prec != -1)
+			__assert("sign/precision unsupported", __FILE__, __LINE__);
+
+		if (slen < width && !padLeft) {
+			char padChar = padZero ? '0' : ' ';
+			SendRepeat(buff, padChar, width - slen);
+		}
+
+		Send(buff, str, slen);
+
+		if (slen < width && padLeft) {
+			char padChar = padZero ? '0' : ' ';
+			SendRepeat(buff, padChar, width - slen);
+		}
+	}
 }
 
-/* setlogmask -- set the log mask level */
-int
-setlogmask (int pmask)
-{
-  int omask;
+static int open_log_socket(void) {
+	// ToDo: Ideally we want this to fail if the gid of the current
+	// process is AID_LOGD, but will have to wait until we have
+	// registered this in private/android_filesystem_config.h. We have
+	// found that all logd crashes thus far have had no problem stuffing
+	// the UNIX domain socket and moving on so not critical *today*.
 
-  /* Protect against multiple users.  */
-  __libc_lock_lock (syslog_lock);
+	int log_fd = TEMP_FAILURE_RETRY(socket(PF_UNIX, SOCK_DGRAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0));
+	if (log_fd == -1)
+		return -1;
 
-  omask = LogMask;
-  if (pmask != 0)
-    LogMask = pmask;
+	union {
+		struct sockaddr addr;
+		struct sockaddr_un addrUn;
+	} u;
+	memset(&u, 0, sizeof(u));
+	u.addrUn.sun_family = AF_UNIX;
+	strlcpy(u.addrUn.sun_path, _PATH_LOG, sizeof(u.addrUn.sun_path));
 
-  __libc_lock_unlock (syslog_lock);
+	if (TEMP_FAILURE_RETRY(connect(log_fd, &u.addr, sizeof(u.addrUn))) != 0) {
+		close(log_fd);
+		return -1;
+	}
 
-  return (omask);
+	return log_fd;
+}
+
+static int write_stderr(const char* tag, const char* msg) {
+	struct iovec vec[4];
+	vec[0].iov_base = (char*)tag;
+	vec[0].iov_len = strlen(tag);
+	vec[1].iov_base = (char*)": ";
+	vec[1].iov_len = 2;
+	vec[2].iov_base = (char*)msg;
+	vec[2].iov_len = strlen(msg);
+	vec[3].iov_base = (char*)"\n";
+	vec[3].iov_len = 1;
+
+	return TEMP_FAILURE_RETRY(writev(STDERR_FILENO, vec, 4));
+}
+
+int async_safe_write_log(int priority, const char* tag, const char* msg) {
+	int main_log_fd = open_log_socket();
+	if (main_log_fd == -1)
+		// Try stderr instead.
+		return write_stderr(tag, msg);
+
+	struct iovec vec[6];
+	char log_id = (priority == ANDROID_LOG_FATAL) ? LOG_ID_CRASH : LOG_ID_MAIN;
+	vec[0].iov_base = &log_id;
+	vec[0].iov_len = sizeof(log_id);
+	uint16_t tid = INTERNAL_SYSCALL_CALL(gettid);
+	vec[1].iov_base = &tid;
+	vec[1].iov_len = sizeof(tid);
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	struct log_time realtime_ts;
+	realtime_ts.tv_sec = ts.tv_sec;
+	realtime_ts.tv_nsec = ts.tv_nsec;
+	vec[2].iov_base = &realtime_ts;
+	vec[2].iov_len = sizeof(realtime_ts);
+
+	vec[3].iov_base = &priority;
+	vec[3].iov_len = 1;
+	vec[4].iov_base = (char*)tag;
+	vec[4].iov_len = strlen(tag) + 1;
+	vec[5].iov_base = (char*)msg;
+	vec[5].iov_len = strlen(msg) + 1;
+
+	int result = TEMP_FAILURE_RETRY(writev(main_log_fd, vec, sizeof(vec) / sizeof(vec[0])));
+	close(main_log_fd);
+	return result;
+}
+
+int async_safe_format_log_va_list(int priority, const char* tag, const char* format, va_list args) {
+	//ErrnoRestorer errno_restorer;
+	char buffer[1024];
+	struct BufferOutputStream os = BufferOutput(buffer, sizeof(buffer));
+	out_vformat(&os, format, args);
+	return async_safe_write_log(priority, tag, buffer);
+}
+
+int async_safe_format_log(int priority, const char* tag, const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	int result = async_safe_format_log_va_list(priority, tag, format, args);
+	va_end(args);
+	return result;
+}
+
+// ======================
+// syslog functions
+
+void closelog(void) {
+	syslog_log_tag = NULL;
+	syslog_options = 0;
+}
+
+void openlog(const char* log_tag, int options, int /*facility*/) {
+	syslog_log_tag = log_tag;
+	syslog_options = options;
+}
+
+int setlogmask(int new_mask) {
+	int old_mask = syslog_priority_mask;
+	// 0 is used to query the current mask.
+	if (new_mask != 0)
+		syslog_priority_mask = new_mask;
+	return old_mask;
+}
+
+void __vsyslog_internal(int priority, const char* fmt, va_list args, unsigned int mode_flags) {
+	// Check whether we're supposed to be logging messages of this priority.
+	if ((syslog_priority_mask & LOG_MASK(LOG_PRI(priority))) == 0)
+		return;
+
+	// What's our log tag?
+	const char* log_tag = syslog_log_tag;
+	if (log_tag == NULL)
+		log_tag = __progname;
+
+	// What's our Android log priority?
+	priority &= LOG_PRIMASK;
+	int android_log_priority;
+	if (priority <= LOG_CRIT) // LOG_ALERT LOG_EMERG
+		android_log_priority = ANDROID_LOG_FATAL;
+	else if (priority == LOG_ERR)
+		android_log_priority = ANDROID_LOG_ERROR;
+	else if (priority <= LOG_NOTICE) // LOG_WARNING
+		android_log_priority = ANDROID_LOG_WARN;
+	else if (priority == LOG_INFO)
+		android_log_priority = ANDROID_LOG_INFO;
+	else // LOG_DEBUG
+		android_log_priority = ANDROID_LOG_DEBUG;
+
+	// We can't let async_safe_format_log do the formatting because it doesn't
+	// support all the printf functionality.
+	char log_line[1024];
+	int n = __vsnprintf_internal(log_line, sizeof(log_line), fmt, args, mode_flags);
+	if (n < 0) return;
+
+	async_safe_format_log(android_log_priority, log_tag, "%s", log_line);
+	if ((syslog_options & LOG_PERROR) != 0) {
+		bool have_newline =
+				(n > 0 && n < (int)sizeof(log_line) && log_line[n - 1] == '\n');
+		dprintf(STDERR_FILENO, "%s: %s%s", log_tag, log_line, have_newline ? "" : "\n");
+	}
+}
+
+void __syslog(int pri, const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	__vsyslog_internal(pri, fmt, ap, 0);
+	va_end(ap);
+}
+ldbl_hidden_def(__syslog, syslog)
+ldbl_strong_alias(__syslog, syslog)
+
+void __vsyslog(int pri, const char *fmt, va_list ap) {
+	__vsyslog_internal(pri, fmt, ap, 0);
+}
+ldbl_weak_alias(__vsyslog, vsyslog)
+
+void ___syslog_chk(int pri, int flag, const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	__vsyslog_internal(pri, fmt, ap, (flag > 0) ? PRINTF_FORTIFY : 0);
+	va_end(ap);
+}
+ldbl_hidden_def(___syslog_chk, __syslog_chk)
+ldbl_strong_alias(___syslog_chk, __syslog_chk)
+
+void __vsyslog_chk(int pri, int flag, const char *fmt, va_list ap) {
+	__vsyslog_internal(pri, fmt, ap, (flag > 0) ? PRINTF_FORTIFY : 0);
 }
