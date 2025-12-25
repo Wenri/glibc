@@ -21,6 +21,9 @@
    sysdeps/unix/sysv/linux/libc_fatal.c.  */
 #include <sysdeps/posix/libc_fatal.c>
 
+#define STATIC_STUBS
+#include <unwind-resume.c>
+
 #include <stdlib.h>
 #include <unwind.h>
 
