@@ -21,6 +21,7 @@
 
 #define ENTNAME		protoent
 #define DATABASE	"protocols"
+#define NIX_DATAFILE "NIX_ETC_PROTOCOLS"
 
 struct protoent_data {};
 

@@ -22,6 +22,7 @@
 
 #define ENTNAME		servent
 #define DATABASE	"services"
+#define NIX_DATAFILE "NIX_ETC_SERVICES"
 
 struct servent_data {};
 
