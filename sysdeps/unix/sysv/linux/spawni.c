@@ -412,13 +412,6 @@ __spawnix (int *pid, const char *file,
 	 on parent_tid.  */
       .parent_tid = use_pidfd ? (uintptr_t) &args.pidfd : 0,
     };
-#ifdef HAVE_CLONE3_WRAPPER
-  args.use_clone3 = true;
-  new_pid = __clone3 (&clone_args, sizeof (clone_args), __spawni_child,
-		      &args);
-  /* clone3 was added in 5.3 and CLONE_CLEAR_SIGHAND in 5.5.  */
-  if (new_pid == -1 && (errno == ENOSYS || errno == EINVAL))
-#endif
     {
       args.use_clone3 = false;
       if (!set_cgroup)
@@ -429,9 +422,6 @@ __spawnix (int *pid, const char *file,
 	  /* No fallback for POSIX_SPAWN_SETCGROUP if clone3 is not
 	     supported.  */
 	  new_pid = -1;
-#ifdef HAVE_CLONE3_WRAPPER
-	  if (errno == ENOSYS)
-#endif
 	    errno = ENOTSUP;
 	}
     }
