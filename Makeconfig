@@ -197,7 +197,7 @@ inst_zonedir = $(install_root)$(zonedir)
 ifndef complocaledir
 complocaledir = $(libdir)/locale
 endif
-inst_complocaledir = $(install_root)$(complocaledir)
+inst_complocaledir ?= $(install_root)$(complocaledir)
 
 # Where to install the message catalog data files (which are
 # machine-independent).
