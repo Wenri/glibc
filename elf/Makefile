@@ -1474,14 +1474,14 @@ $(objpfx)sln: $(sln-modules:%=$(objpfx)%.o)
 
 $(objpfx)ldconfig: $(ldconfig-modules:%=$(objpfx)%.o)
 
-SYSCONF-FLAGS := -D'SYSCONFDIR="$(sysconfdir)"'
-CFLAGS-ldconfig.c += $(SYSCONF-FLAGS) -D'LIBDIR="$(libdir)"' \
+PREFIX-FLAGS := -D'PREFIX="$(prefix)"'
+CFLAGS-ldconfig.c += $(PREFIX-FLAGS) -D'LIBDIR="$(libdir)"' \
 		    -D'SLIBDIR="$(slibdir)"'
 libof-ldconfig = ldconfig
-CFLAGS-dl-cache.c += $(SYSCONF-FLAGS)
-CFLAGS-cache.c += $(SYSCONF-FLAGS)
-CFLAGS-rtld.c += $(SYSCONF-FLAGS)
-CFLAGS-dl-usage.c += $(SYSCONF-FLAGS) \
+CFLAGS-dl-cache.c += $(PREFIX-FLAGS)
+CFLAGS-cache.c += $(PREFIX-FLAGS)
+CFLAGS-rtld.c += $(PREFIX-FLAGS)
+CFLAGS-dl-usage.c += $(PREFIX-FLAGS) \
   -D'RTLD="$(rtlddir)/$(rtld-installed-name)"'
 CFLAGS-dl-diagnostics.c += $(SYSCONF-FLAGS) \
   -D'PREFIX="$(prefix)"' \
