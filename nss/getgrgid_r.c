@@ -27,5 +27,6 @@
 #define BUFLEN		NSS_BUFLEN_GROUP
 #define DEEPCOPY_FN	__copy_grp
 #define MERGE_FN	__merge_grp
+#define ANDROID_SYS	getgrgid_android
 
 #include <nss/getXXbyYY_r.c>

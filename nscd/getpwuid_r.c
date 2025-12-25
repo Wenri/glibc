@@ -23,6 +23,7 @@
 #define ADD_PARAMS	uid_t uid
 #define ADD_VARIABLES	uid
 #define BUFLEN		NSS_BUFLEN_PASSWD
+#define ANDROID_SYS	getpwuid_android
 
 /* We are nscd, so we don't want to be talking to ourselves.  */
 #undef	USE_NSCD

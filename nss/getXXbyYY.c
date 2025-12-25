@@ -53,6 +53,10 @@
 # include <resolv/resolv_context.h>
 #endif
 
+#ifdef ANDROID_SYS
+# include "android_passwd_group.h"
+#endif
+
 /* To make the real sources a bit prettier.  */
 #define REENTRANT_NAME APPEND_R (FUNCTION_NAME)
 #define APPEND_R(name) APPEND_R1 (name)
@@ -174,6 +178,11 @@ done:
 #ifdef NEED_H_ERRNO
   if (h_errno_tmp != 0)
     __set_h_errno (h_errno_tmp);
+#endif
+
+#ifdef ANDROID_SYS
+  if (result == NULL)
+    result = ANDROID_SYS (ADD_VARIABLES);
 #endif
 
   return result;

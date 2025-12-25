@@ -24,6 +24,7 @@
 #define DATABASE_NAME	group
 #define ADD_PARAMS	const char *name
 #define ADD_VARIABLES	name
+#define ANDROID_SYS	getgrnam_android
 
 #define DEEPCOPY_FN	__copy_grp
 #define MERGE_FN	__merge_grp

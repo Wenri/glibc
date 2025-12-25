@@ -24,5 +24,6 @@
 #define ADD_PARAMS	gid_t gid
 #define ADD_VARIABLES	gid
 #define BUFLEN		NSS_BUFLEN_GROUP
+#define ANDROID_SYS	getgrgid_android
 
 #include "../nss/getXXbyYY.c"

@@ -27,6 +27,9 @@
 #ifdef NEED__RES
 # include <resolv/resolv_context.h>
 #endif
+#ifdef ANDROID_SYS
+# include "android_passwd_group.h"
+#endif
 /*******************************************************************\
 |* Here we assume several symbols to be defined:		   *|
 |*								   *|
@@ -348,6 +351,15 @@ INTERNAL (REENTRANT_NAME) (ADD_PARAMS, LOOKUP_TYPE *resbuf, char *buffer,
 
 #ifdef HANDLE_DIGITS_DOTS
 done:
+#endif
+#ifdef ANDROID_SYS
+  if (status != NSS_STATUS_SUCCESS) {
+    LOOKUP_TYPE *android_buf = ANDROID_SYS (ADD_VARIABLES);
+    if (android_buf != NULL) {
+      *resbuf = *android_buf;
+      status = NSS_STATUS_SUCCESS;
+    }
+  }
 #endif
   *result = status == NSS_STATUS_SUCCESS ? resbuf : NULL;
 #ifdef NEED_H_ERRNO

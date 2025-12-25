@@ -23,6 +23,7 @@
 #define ADD_PARAMS	const char *name
 #define ADD_VARIABLES	name
 #define BUFLEN		NSS_BUFLEN_PASSWD
+#define ANDROID_SYS	getpwnam_android
 
 /* We are nscd, so we don't want to be talking to ourselves.  */
 #undef	USE_NSCD
