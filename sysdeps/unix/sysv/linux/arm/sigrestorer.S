@@ -16,6 +16,7 @@
    <https://www.gnu.org/licenses/>.  */
 
 #include <sysdep.h>
+#include <disabled-syscall.h>
 
 /* If no SA_RESTORER function was specified by the application we use
    one of these.  This avoids the need for the kernel to synthesise a return

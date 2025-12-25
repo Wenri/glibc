@@ -18,6 +18,7 @@
 
 #include <signal.h>
 #include <ldsodefs.h>
+#include <disabled-syscall.h>
 
 #define SA_RESTORER 0x04000000
 
