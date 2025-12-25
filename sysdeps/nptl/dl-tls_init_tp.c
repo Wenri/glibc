@@ -89,14 +89,9 @@ __tls_init_tp (void)
     pd->robust_head.futex_offset = (offsetof (pthread_mutex_t, __data.__lock)
                                     - offsetof (pthread_mutex_t,
                                                 __data.__list.__next));
-    int res = INTERNAL_SYSCALL_CALL (set_robust_list, &pd->robust_head,
-                                     sizeof (struct robust_list_head));
-    if (!INTERNAL_SYSCALL_ERROR_P (res))
-      {
 #ifndef __ASSUME_SET_ROBUST_LIST
-        __nptl_set_robust_list_avail = true;
+    __nptl_set_robust_list_avail = false;
 #endif
-      }
   }
 
   {
