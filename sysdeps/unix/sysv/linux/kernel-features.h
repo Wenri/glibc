@@ -70,7 +70,6 @@
    separate syscalls were only added later.  */
 #define __ASSUME_SENDMSG_SYSCALL	1
 #define __ASSUME_RECVMSG_SYSCALL	1
-#define __ASSUME_ACCEPT_SYSCALL		1
 #define __ASSUME_CONNECT_SYSCALL	1
 #define __ASSUME_RECVFROM_SYSCALL	1
 #define __ASSUME_SENDTO_SYSCALL		1
