@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <setxid.h>
+#include <fakesyscall.h>
 
 
 int
@@ -29,9 +30,9 @@ seteuid (uid_t uid)
     return INLINE_SYSCALL_ERROR_RETURN_VALUE (EINVAL);
 
 #ifdef __NR_setresuid32
-  result = INLINE_SETXID_SYSCALL (setresuid32, 3, -1, uid, -1);
+  result = syscall (__NR_setresuid32, 3, -1, uid, -1);
 #else
-  result = INLINE_SETXID_SYSCALL (setresuid, 3, -1, uid, -1);
+  result = syscall (__NR_setresuid, 3, -1, uid, -1);
 #endif
 
   return result;

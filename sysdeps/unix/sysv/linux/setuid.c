@@ -18,14 +18,15 @@
 #include <errno.h>
 #include <unistd.h>
 #include <setxid.h>
+#include <fakesyscall.h>
 
 int
 __setuid (uid_t uid)
 {
 #ifdef __NR_setuid32
-  return INLINE_SETXID_SYSCALL (setuid32, 1, uid);
+  return syscall (__NR_setuid32, 1, uid);
 #else
-  return INLINE_SETXID_SYSCALL (setuid, 1, uid);
+  return syscall (__NR_setuid, 1, uid);
 #endif
 }
 #ifndef __setuid

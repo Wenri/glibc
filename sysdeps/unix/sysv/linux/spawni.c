@@ -27,6 +27,7 @@
 #include <sysdep.h>
 #include <sys/resource.h>
 #include <clone_internal.h>
+#include <fakesyscall.h>
 
 /* The Linux implementation of posix_spawn{p} uses the clone syscall directly
    with CLONE_VM and CLONE_VFORK flags and an allocated stack.  The new stack
@@ -265,7 +266,7 @@ __spawni_child (void *arguments)
 	    case spawn_do_closefrom:
 	      {
 		int lowfd = action->action.closefrom_action.from;
-	        int r = INLINE_SYSCALL_CALL (close_range, lowfd, ~0U, 0);
+	        int r = syscall (__NR_close_range, lowfd, ~0U, 0);
 		if (r != 0 && !__closefrom_fallback (lowfd, false))
 		  goto fail;
 	      } break;

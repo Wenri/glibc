@@ -19,15 +19,16 @@
 #include <ipc_priv.h>
 #include <sysdep.h>
 #include <errno.h>
+#include <fakesyscall.h>
 
 static int
 semtimedop_syscall (int semid, struct sembuf *sops, size_t nsops,
 		    const struct __timespec64 *timeout)
 {
 #ifdef __NR_semtimedop_time64
-  return INLINE_SYSCALL_CALL (semtimedop_time64, semid, sops, nsops, timeout);
+  return syscall (__NR_semtimedop_time64, semid, sops, nsops, timeout);
 #elif defined __ASSUME_DIRECT_SYSVIPC_SYSCALLS && defined __NR_semtimedop
-  return INLINE_SYSCALL_CALL (semtimedop, semid, sops, nsops, timeout);
+  return syscall (__NR_semtimedop, semid, sops, nsops, timeout);
 #else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_semtimedop, semid,
 			      SEMTIMEDOP_IPC_ARGS (nsops, sops, timeout));
@@ -59,7 +60,7 @@ __semtimedop64 (int semid, struct sembuf *sops, size_t nsops,
       pts32 = &ts32;
     }
 # ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
-  return INLINE_SYSCALL_CALL (semtimedop, semid, sops, nsops, pts32);
+  return syscall (__NR_semtimedop, semid, sops, nsops, pts32);
 # else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_semtimedop, semid,
 			      SEMTIMEDOP_IPC_ARGS (nsops, sops, pts32));
