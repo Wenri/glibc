@@ -26,7 +26,7 @@
    For kernel entry we need to move the system call nr to x8 then
    load the remaining arguments to register. */
 
-ENTRY (syscall)
+ENTRY (syscallS)
 	uxtw	x8, w0
 	mov	x0, x1
 	mov	x1, x2
@@ -41,4 +41,4 @@ ENTRY (syscall)
 	RET
 1:
 	b	SYSCALL_ERROR
-PSEUDO_END (syscall)
+PSEUDO_END (syscallS)
