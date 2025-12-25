@@ -1002,6 +1002,10 @@ rtld_hidden_proto (__tls_get_addr)
 rtld_hidden_def (__tls_get_addr)
 #endif
 
+#ifdef __x86_64__
+/* Old versions of gcc didn't align the stack. */
+__attribute__((force_align_arg_pointer))
+#endif
 /* The generic dynamic and local dynamic model cannot be used in
    statically linked applications.  */
 void *
