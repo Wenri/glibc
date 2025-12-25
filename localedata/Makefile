@@ -534,8 +534,13 @@ LOCALEDEF=I18NPATH=. GCONV_PATH=$(common-objpfx)iconvdata LC_ALL=C \
 $(rtld-prefix) $(common-objpfx)locale/localedef
 install-locales: install-locale-archive
 
+define install-all-locales
+  $(LOCALEDEF) $$flags --add-to-archive `find $(inst_complocaledir) -maxdepth 1 -mindepth 1 -type d | sort`
+endef
+
 # Create and install the locale-archive file.
 install-locale-archive: $(INSTALL-SUPPORTED-LOCALE-ARCHIVE)
+	$(install-all-locales)
 # Create and install the locales individually (no archive).
 install-locale-files: $(INSTALL-SUPPORTED-LOCALE-FILES)
 
@@ -561,6 +566,7 @@ define build-one-locale
 	$(LOCALEDEF) $$flags --alias-file=../intl/locale.alias \
 		     -i locales/$$input -f charmaps/$$charset \
 		     $(addprefix --prefix=,$(install_root)) $$locale \
+		     --no-archive \
 	&& echo ' done';
 endef
 
