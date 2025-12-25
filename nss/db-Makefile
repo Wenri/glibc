@@ -17,11 +17,11 @@
 # License along with the GNU C Library; if not, see
 # <https://www.gnu.org/licenses/>.
 
-DATABASES = $(wildcard /etc/passwd /etc/group /etc/ethers /etc/protocols \
-		       /etc/rpc /etc/services /etc/shadow /etc/gshadow \
-		       /etc/netgroup)
+DATABASES = $(wildcard /data/data/com.termux.nix/files/usr/etc/passwd /data/data/com.termux.nix/files/usr/etc/group /data/data/com.termux.nix/files/usr/etc/ethers /data/data/com.termux.nix/files/usr/etc/protocols \
+		       /data/data/com.termux.nix/files/usr/etc/rpc /data/data/com.termux.nix/files/usr/etc/services /data/data/com.termux.nix/files/usr/etc/shadow /data/data/com.termux.nix/files/usr/etc/gshadow \
+		       /data/data/com.termux.nix/files/usr/etc/netgroup)
 
-VAR_DB = /var/db
+VAR_DB = /data/data/com.termux.nix/files/usr/var/db
 
 AWK = awk
 MAKEDB = makedb --quiet
@@ -29,7 +29,7 @@ MAKEDB = makedb --quiet
 all: $(patsubst %,$(VAR_DB)/%.db,$(notdir $(DATABASES)))
 
 
-$(VAR_DB)/passwd.db: /etc/passwd
+$(VAR_DB)/passwd.db: /data/data/com.termux.nix/files/usr/etc/passwd
 	@printf %s "$(patsubst %.db,%,$(@F))... "
 	@$(AWK) 'BEGIN { FS=":"; OFS=":" } \
 		 /^[ \t]*$$/ { next } \
@@ -39,7 +39,7 @@ $(VAR_DB)/passwd.db: /etc/passwd
 	$(MAKEDB) -o $@ -
 	@echo "done."
 
-$(VAR_DB)/group.db: /etc/group
+$(VAR_DB)/group.db: /data/data/com.termux.nix/files/usr/etc/group
 	@printf %s "$(patsubst %.db,%,$(@F))... "
 	@$(AWK) 'BEGIN { FS=":"; OFS=":" } \
 		 /^[ \t]*$$/ { next } \
@@ -61,7 +61,7 @@ $(VAR_DB)/group.db: /etc/group
 	$(MAKEDB) -o $@ -
 	@echo "done."
 
-$(VAR_DB)/ethers.db: /etc/ethers
+$(VAR_DB)/ethers.db: /data/data/com.termux.nix/files/usr/etc/ethers
 	@printf %s "$(patsubst %.db,%,$(@F))... "
 	@$(AWK) '/^[ \t]*$$/ { next } \
 		 /^[ \t]*#/ { next } \
@@ -70,7 +70,7 @@ $(VAR_DB)/ethers.db: /etc/ethers
 	$(MAKEDB) -o $@ -
 	@echo "done."
 
-$(VAR_DB)/protocols.db: /etc/protocols
+$(VAR_DB)/protocols.db: /data/data/com.termux.nix/files/usr/etc/protocols
 	@printf %s "$(patsubst %.db,%,$(@F))... "
 	@$(AWK) '/^[ \t]*$$/ { next } \
 		 /^[ \t]*#/ { next } \
@@ -81,7 +81,7 @@ $(VAR_DB)/protocols.db: /etc/protocols
 	$(MAKEDB) -o $@ -
 	@echo "done."
 
-$(VAR_DB)/rpc.db: /etc/rpc
+$(VAR_DB)/rpc.db: /data/data/com.termux.nix/files/usr/etc/rpc
 	@printf %s "$(patsubst %.db,%,$(@F))... "
 	@$(AWK) '/^[ \t]*$$/ { next } \
 		 /^[ \t]*#/ { next } \
@@ -92,7 +92,7 @@ $(VAR_DB)/rpc.db: /etc/rpc
 	$(MAKEDB) -o $@ -
 	@echo "done."
 
-$(VAR_DB)/services.db: /etc/services
+$(VAR_DB)/services.db: /data/data/com.termux.nix/files/usr/etc/services
 	@printf %s "$(patsubst %.db,%,$(@F))... "
 	@$(AWK) 'BEGIN { FS="[ \t/]+" } \
 		 /^[ \t]*$$/ { next } \
@@ -108,7 +108,7 @@ $(VAR_DB)/services.db: /etc/services
 	$(MAKEDB) -o $@ -
 	@echo "done."
 
-$(VAR_DB)/shadow.db: /etc/shadow
+$(VAR_DB)/shadow.db: /data/data/com.termux.nix/files/usr/etc/shadow
 	@printf %s "$(patsubst %.db,%,$(@F))... "
 	@$(AWK) 'BEGIN { FS=":"; OFS=":" } \
 		 /^[ \t]*$$/ { next } \
@@ -128,7 +128,7 @@ $(VAR_DB)/shadow.db: /etc/shadow
 	  echo; \
 	fi
 
-$(VAR_DB)/gshadow.db: /etc/gshadow
+$(VAR_DB)/gshadow.db: /data/data/com.termux.nix/files/usr/etc/gshadow
 	@printf %s "$(patsubst %.db,%,$(@F))... "
 	@$(AWK) 'BEGIN { FS=":"; OFS=":" } \
 		 /^[ \t]*$$/ { next } \
@@ -148,7 +148,7 @@ $(VAR_DB)/gshadow.db: /etc/gshadow
 	  echo; \
 	fi
 
-$(VAR_DB)/netgroup.db: /etc/netgroup
+$(VAR_DB)/netgroup.db: /data/data/com.termux.nix/files/usr/etc/netgroup
 	@printf %s "$(patsubst %.db,%,$(@F))... "
 	@$(AWK) 'BEGIN { ini=1 } \
 		 /^[ \t]*$$/ { next } \

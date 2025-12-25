@@ -33,7 +33,7 @@
 
 /* This should only be defined on systems with a BSD compatible ypbind */
 #ifndef BINDINGDIR
-# define BINDINGDIR "/var/yp/binding"
+# define BINDINGDIR "/data/data/com.termux.nix/files/usr/var/yp/binding"
 #endif
 
 struct dom_binding

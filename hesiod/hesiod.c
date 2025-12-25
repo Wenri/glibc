@@ -60,7 +60,7 @@
 #include "hesiod.h"
 #include "hesiod_p.h"
 
-#define _PATH_HESIOD_CONF "/etc/hesiod.conf"
+#define _PATH_HESIOD_CONF "/data/data/com.termux.nix/files/usr/etc/hesiod.conf"
 
 /* Forward */
 

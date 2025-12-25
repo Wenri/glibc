@@ -8,7 +8,7 @@ int
 main (int argc, char *argv[])
 {
   int lose = 0;
-  char filename[] = "/tmp/bug7.XXXXXX";
+  char filename[] = "/data/data/com.termux.nix/files/tmp/bug7.XXXXXX";
   FILE *fp;
 
   int fd = mkstemp (filename);
@@ -36,8 +36,8 @@ main (int argc, char *argv[])
   {
     FILE *file1;
     FILE *file2;
-    char filename1[] = "/tmp/bug7.XXXXXX";
-    char filename2[] = "/tmp/bug7.XXXXXX";
+    char filename1[] = "/data/data/com.termux.nix/files/tmp/bug7.XXXXXX";
+    char filename2[] = "/data/data/com.termux.nix/files/tmp/bug7.XXXXXX";
     int ch;
 
     int fd1 = mkstemp (filename1);

@@ -60,7 +60,7 @@ main(int argc, char *argv[])
 
   unsetenv ("LD_LIBRARY_PATH");
 
-  if (!(input = popen("/bin/cat", "r")))
+  if (!(input = popen("/data/data/com.termux.nix/files/usr/bin/cat", "r")))
     fprintf(stderr, "cannot run \n");
 
   ReadFile(&buffer, input);

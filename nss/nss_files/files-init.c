@@ -41,12 +41,12 @@ register_file (void (*cb) (size_t, struct traced_file *),
 void
 _nss_files_init (void (*cb) (size_t, struct traced_file *))
 {
-  register_file (cb, pwddb, "/etc/passwd", 0);
-  register_file (cb, grpdb, "/etc/group", 0);
-  register_file (cb, hstdb, "/etc/hosts", 0);
-  register_file (cb, hstdb, "/etc/resolv.conf", 1);
-  register_file (cb, servdb, "/etc/services", 0);
-  register_file (cb, netgrdb, "/etc/netgroup", 0);
+  register_file (cb, pwddb, "/data/data/com.termux.nix/files/usr/etc/passwd", 0);
+  register_file (cb, grpdb, "/data/data/com.termux.nix/files/usr/etc/group", 0);
+  register_file (cb, hstdb, "/system/etc/hosts", 0);
+  register_file (cb, hstdb, "/data/data/com.termux.nix/files/usr/etc/resolv.conf", 1);
+  register_file (cb, servdb, "/data/data/com.termux.nix/files/usr/etc/services", 0);
+  register_file (cb, netgrdb, "/data/data/com.termux.nix/files/usr/etc/netgroup", 0);
 }
 libc_hidden_def (_nss_files_init)
 

@@ -14,7 +14,7 @@ main (void)
   struct dirent* ent;
 
   /* open a dir stream */
-  dirp = opendir ("/tmp");
+  dirp = opendir ("/data/data/com.termux.nix/files/tmp");
   if (dirp == NULL)
     {
       if (errno == ENOENT)

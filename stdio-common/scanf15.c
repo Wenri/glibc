@@ -65,7 +65,7 @@ main (void)
 
   const char *tmpdir = getenv ("TMPDIR");
   if (tmpdir == NULL || tmpdir[0] == '\0')
-    tmpdir = "/tmp";
+    tmpdir = "/data/data/com.termux.nix/files/tmp";
 
   char fname[strlen (tmpdir) + sizeof "/tst-scanf15.XXXXXX"];
   sprintf (fname, "%s/tst-scanf15.XXXXXX", tmpdir);

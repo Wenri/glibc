@@ -91,7 +91,7 @@
  */
 
 #ifndef _PATH_RESCONF
-#define _PATH_RESCONF        "/etc/resolv.conf"
+#define _PATH_RESCONF        "/data/data/com.termux.nix/files/usr/etc/resolv.conf"
 #endif
 
 struct res_sym {

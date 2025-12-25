@@ -118,7 +118,7 @@ typedef __fpos64_t fpos64_t;
 
 #if defined __USE_MISC || defined __USE_XOPEN
 /* Default path prefix for `tempnam' and `tmpnam'.  */
-# define P_tmpdir	"/tmp"
+# define P_tmpdir	"/data/data/com.termux.nix/files/tmp"
 #endif
 
 #define L_tmpnam 20

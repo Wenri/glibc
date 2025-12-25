@@ -18,8 +18,8 @@ cb (const char *fname, const struct stat *st, int flag)
 int
 main (void)
 {
-  char tmp[] = "/tmp/ftwXXXXXX";
-  char tmp2[] = "/tmp/ftwXXXXXX/ftwXXXXXX";
+  char tmp[] = "/data/data/com.termux.nix/files/tmp/ftwXXXXXX";
+  char tmp2[] = "/data/data/com.termux.nix/files/tmp/ftwXXXXXX/ftwXXXXXX";
   char *dname;
   char *dname2;
   int r;

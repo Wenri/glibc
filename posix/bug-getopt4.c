@@ -53,7 +53,7 @@ one_test (const char *fmt, int argc, char *argv[], int n, int expected[n])
 static int
 do_test (void)
 {
-  char fname[] = "/tmp/bug-getopt4.XXXXXX";
+  char fname[] = "/data/data/com.termux.nix/files/tmp/bug-getopt4.XXXXXX";
   int fd = mkstemp (fname);
   if (fd == -1)
     {
