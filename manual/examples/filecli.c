@@ -22,8 +22,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#define SERVER	"/tmp/serversocket"
-#define CLIENT	"/tmp/mysocket"
+#define SERVER	"/data/data/com.termux.nix/files/tmp/serversocket"
+#define CLIENT	"/data/data/com.termux.nix/files/tmp/mysocket"
 #define MAXMSG	512
 #define MESSAGE	"Yow!!! Are we having fun yet?!?"
 

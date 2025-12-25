@@ -33,7 +33,7 @@ _nss_files_initgroups_dyn (const char *user, gid_t group, long int *start,
 			   long int *size, gid_t **groupsp, long int limit,
 			   int *errnop)
 {
-  FILE *stream = __nss_files_fopen ("/etc/group");
+  FILE *stream = __nss_files_fopen ("/data/data/com.termux.nix/files/usr/etc/group");
   if (stream == NULL)
     {
       *errnop = errno;

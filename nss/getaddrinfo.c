@@ -1726,7 +1726,7 @@ in6aicmp (const void *p1, const void *p2)
 
 
 /* Name of the config file for RFC 3484 sorting (for now).  */
-#define GAICONF_FNAME "/etc/gai.conf"
+#define GAICONF_FNAME "/data/data/com.termux.nix/files/usr/etc/gai.conf"
 
 
 /* Non-zero if we are supposed to reload the config file automatically

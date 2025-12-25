@@ -122,7 +122,7 @@ internal_setgrent (ent_t *ent)
   else
     ent->blacklist.current = 0;
 
-  ent->stream = __nss_files_fopen ("/etc/group");
+  ent->stream = __nss_files_fopen ("/data/data/com.termux.nix/files/usr/etc/group");
 
   if (ent->stream == NULL)
     status = errno == EAGAIN ? NSS_STATUS_TRYAGAIN : NSS_STATUS_UNAVAIL;

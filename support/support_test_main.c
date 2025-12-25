@@ -351,7 +351,7 @@ support_test_main (int argc, char **argv, const struct test_config *config)
     {
       test_dir = getenv ("TMPDIR");
       if (test_dir == NULL || test_dir[0] == '\0')
-        test_dir = "/tmp";
+        test_dir = "/data/data/com.termux.nix/files/tmp";
     }
   if (support_set_test_dir != NULL)
     support_set_test_dir (test_dir);

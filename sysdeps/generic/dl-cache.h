@@ -35,7 +35,7 @@
 #endif
 
 #ifndef LD_SO_CACHE
-# define LD_SO_CACHE PREFIX "/etc/ld.so.cache"
+# define LD_SO_CACHE "/data/data/com.termux.nix/files/etc/ld.so.cache"
 #endif
 
 #ifndef add_system_dir

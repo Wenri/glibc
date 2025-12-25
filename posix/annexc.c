@@ -26,7 +26,7 @@
 
 #define HEADER_MAX          256
 
-static char macrofile[] = "/tmp/annexc.XXXXXX";
+static char macrofile[] = "/data/data/com.termux.nix/files/tmp/annexc.XXXXXX";
 
 /* <aio.h>.  */
 static const char *const aio_syms[] =

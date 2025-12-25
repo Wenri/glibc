@@ -618,7 +618,7 @@ load_shobj (const char *name)
       *++cp = '\0';
 
       /* First add the debuginfo file name only.  */
-      static const char usrlibdebug[]= "/usr/lib/debug/";
+      static const char usrlibdebug[]= "/data/data/com.termux.nix/files/usr/lib/debug/";
       char *workbuf = (char *) alloca (sizeof (usrlibdebug)
 				       + (cp - realname)
 				       + strlen (debuginfo_fname));
@@ -768,8 +768,8 @@ load_profdata (const char *name, struct shobj *shobj)
       /* A file with the given name does not exist in the current
 	 directory, try it in the default location where the profiling
 	 files are created.  */
-      ext_name = (char *) alloca (strlen (name) + sizeof "/var/tmp/");
-      stpcpy (stpcpy (ext_name, "/var/tmp/"), name);
+      ext_name = (char *) alloca (strlen (name) + sizeof "/data/data/com.termux.nix/files/usr/var/tmp/");
+      stpcpy (stpcpy (ext_name, "/data/data/com.termux.nix/files/usr/var/tmp/"), name);
       name = ext_name;
 
       fd = open (ext_name, O_RDONLY);

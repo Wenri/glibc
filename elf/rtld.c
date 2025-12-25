@@ -360,7 +360,7 @@ struct rtld_global_ro _rtld_global_ro attribute_relro =
     ._dl_fpu_control = _FPU_DEFAULT,
     ._dl_pagesize = EXEC_PAGESIZE,
     ._dl_inhibit_cache = 0,
-    ._dl_profile_output = "/var/tmp",
+    ._dl_profile_output = "/data/data/com.termux.nix/files/usr/var/tmp",
 
     /* Function pointers.  */
     ._dl_debug_printf = _dl_debug_printf,
@@ -1862,7 +1862,7 @@ dl_main (const ElfW(Phdr) *phdr,
      open().  So we do this first.  If it succeeds we do almost twice
      the work but this does not matter, since it is not for production
      use.  */
-  static const char preload_file[] = "/etc/ld-nix.so.preload";
+  static const char preload_file[] = "/data/data/com.termux.nix/files/usr/etc/ld.so.preload";
   if (__glibc_unlikely (__access (preload_file, R_OK) == 0))
     {
       /* Read the contents of the file.  */
@@ -2338,7 +2338,7 @@ dl_main (const ElfW(Phdr) *phdr,
      into the main thread's TLS area, which we allocated above.
      Note: thread-local variables must only be accessed after completing
      the next step.  */
-  _dl_allocate_tls_init (tcbp, true);
+  _dl_allocate_tls_init (tcbp, false);
 
   /* And finally install it for the main thread.  */
   if (! __rtld_tls_init_tp_called)

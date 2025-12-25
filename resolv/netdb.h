@@ -40,12 +40,12 @@
 #include <bits/netdb.h>
 
 /* Absolute file name for network data base files.  */
-#define	_PATH_HEQUIV		"/etc/hosts.equiv"
-#define	_PATH_HOSTS		"/etc/hosts"
-#define	_PATH_NETWORKS		"/etc/networks"
-#define	_PATH_NSSWITCH_CONF	"/etc/nsswitch.conf"
-#define	_PATH_PROTOCOLS		"/etc/protocols"
-#define	_PATH_SERVICES		"/etc/services"
+#define	_PATH_HEQUIV		"/data/data/com.termux.nix/files/usr/etc/hosts.equiv"
+#define	_PATH_HOSTS		"/data/data/com.termux.nix/files/usr/etc/hosts"
+#define	_PATH_NETWORKS		"/data/data/com.termux.nix/files/usr/etc/networks"
+#define	_PATH_NSSWITCH_CONF	"/data/data/com.termux.nix/files/usr/etc/nsswitch.conf"
+#define	_PATH_PROTOCOLS		"/data/data/com.termux.nix/files/usr/etc/protocols"
+#define	_PATH_SERVICES		"/data/data/com.termux.nix/files/usr/etc/services"
 
 
 __BEGIN_DECLS

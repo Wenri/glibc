@@ -37,7 +37,7 @@ main (void)
     {
       printf ("gethostbyname_r failed: %s (errno: %m)\n", strerror (res));
 
-      if (access ("/etc/resolv.conf", R_OK))
+      if (access ("/data/data/com.termux.nix/files/usr/etc/resolv.conf", R_OK))
 	{
 	  puts ("DNS probably not set up");
 	  return 0;

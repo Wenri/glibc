@@ -23,7 +23,7 @@
 #include <stdbool.h>
 
 /* The directory that contains shared POSIX objects.  */
-#define SHMDIR _PATH_DEV "shm/"
+#define SHMDIR "/data/data/com.termux.nix/files/tmp/"
 
 struct shmdir_name
 {

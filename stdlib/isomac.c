@@ -74,7 +74,7 @@
 
 #define HEADER_MAX          256
 
-static char macrofile[] = "/tmp/isomac.XXXXXX";
+static char macrofile[] = "/data/data/com.termux.nix/files/tmp/isomac.XXXXXX";
 
 /* ISO C header names including Amendment 1 (without ".h" suffix).  */
 static char *header[] =

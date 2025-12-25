@@ -48,7 +48,7 @@
 # define fgets_unlocked __fgets_unlocked
 #endif
 
-#define _PATH_HOSTCONF	"/etc/host.conf"
+#define _PATH_HOSTCONF	"/data/data/com.termux.nix/files/usr/etc/host.conf"
 
 /* Environment vars that all user to override default behavior:  */
 #define ENV_HOSTCONF	"RESOLV_HOST_CONF"

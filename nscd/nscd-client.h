@@ -35,13 +35,13 @@
 #define NSCD_VERSION 2
 
 /* Path of the file where the PID of the running system is stored.  */
-#define _PATH_NSCDPID	 "/var/run/nscd/nscd.pid"
+#define _PATH_NSCDPID	 "/data/data/com.termux.nix/files/usr/var/run/nscd/nscd.pid"
 
 /* Path for the Unix domain socket.  */
-#define _PATH_NSCDSOCKET "/var/run/nscd/socket"
+#define _PATH_NSCDSOCKET "/data/data/com.termux.nix/files/usr/var/run/nscd/socket"
 
 /* Path for the configuration file.  */
-#define _PATH_NSCDCONF	 "/etc/nscd.conf"
+#define _PATH_NSCDCONF	 "/data/data/com.termux.nix/files/usr/etc/nscd.conf"
 
 /* Maximum allowed length for the key.  */
 #define MAXKEYLEN 1024

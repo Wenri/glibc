@@ -48,7 +48,12 @@
 #define FLAG_LARCH_FLOAT_ABI_DOUBLE	0x1200
 
 /* Name of auxiliary cache.  */
-#define _PATH_LDCONFIG_AUX_CACHE "/var/cache/ldconfig/aux-cache"
+#ifdef MULTILIB_GLIBC
+# define _LDCONFIG_NAME "ldconfig32"
+#else
+# define _LDCONFIG_NAME "ldconfig"
+#endif
+#define _PATH_LDCONFIG_AUX_CACHE "/data/data/com.termux.nix/files/usr/var/cache/" _LDCONFIG_NAME "/aux-cache"
 
 /* Declared in cache.c.  */
 extern void print_cache (const char *cache_name);

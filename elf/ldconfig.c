@@ -48,7 +48,7 @@
 #include <dl-procinfo.h>
 
 #ifndef LD_SO_CONF
-# define LD_SO_CONF PREFIX "/etc/ld.so.conf"
+# define LD_SO_CONF "/data/data/com.termux.nix/files/etc/ld.so.conf"
 #endif
 
 /* Get libc version number.  */

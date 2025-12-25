@@ -35,7 +35,7 @@ cb (const char *name, const struct stat64 *st, int type)
 int
 main (void)
 {
-  char name[32] = "/tmp/ftwXXXXXX", *p;
+  char name[32] = "/data/data/com.termux.nix/files/tmp/ftwXXXXXX", *p;
   int ret, i, result = 0, fd, fd1, fd2;
 
   if (mkdtemp (name) == NULL)

@@ -27,7 +27,7 @@
 #include "netgroup.h"
 #include <nss_files.h>
 
-#define DATAFILE	"/etc/netgroup"
+#define DATAFILE	"/data/data/com.termux.nix/files/usr/etc/netgroup"
 
 libc_hidden_proto (_nss_files_endnetgrent)
 

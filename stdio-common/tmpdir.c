@@ -35,7 +35,7 @@
 # ifdef _P_tmpdir /* native Windows */
 #  define P_tmpdir _P_tmpdir
 # else
-#  define P_tmpdir "/tmp"
+#  define P_tmpdir "/data/data/com.termux.nix/files/tmp"
 # endif
 #endif
 
@@ -134,8 +134,8 @@ __path_search (char *tmpl, size_t tmpl_len, const char *dir, const char *pfx,
 #endif
       if (direxists (P_tmpdir))
         dir = P_tmpdir;
-      else if (strcmp (P_tmpdir, "/tmp") != 0 && direxists ("/tmp"))
-        dir = "/tmp";
+      else if (strcmp (P_tmpdir, "/data/data/com.termux.nix/files/tmp") != 0 && direxists ("/data/data/com.termux.nix/files/tmp"))
+        dir = "/data/data/com.termux.nix/files/tmp";
       else
         {
           __set_errno (ENOENT);

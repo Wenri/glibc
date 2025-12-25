@@ -31,7 +31,7 @@
 #include <not-cancel.h>
 #include <internal-signals.h>
 
-#define	SHELL_PATH	"/bin/sh"	/* Path of the shell.  */
+#define	SHELL_PATH	"/data/data/com.termux.nix/files/usr/bin/sh"	/* Path of the shell.  */
 #define	SHELL_NAME	"sh"		/* Name to give it.  */
 
 
