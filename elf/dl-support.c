@@ -295,11 +295,11 @@ _dl_non_dynamic_init (void)
 	}
     }
 
-  _dl_verbose = *(getenv ("LD_WARN") ?: "") == '\0' ? 0 : 1;
+  _dl_verbose = *(getenv ("GLIBC_LD_WARN") ?: getenv ("LD_WARN") ?: "") == '\0' ? 0 : 1;
 
   /* Initialize the data structures for the search paths for shared
      objects.  */
-  _dl_init_paths (getenv ("LD_LIBRARY_PATH"), "LD_LIBRARY_PATH",
+  _dl_init_paths (getenv ("GLIBC_LD_LIBRARY_PATH") ?: getenv ("LD_LIBRARY_PATH"), "LD_LIBRARY_PATH",
 		  /* No glibc-hwcaps selection support in statically
 		     linked binaries.  */
 		  NULL, NULL);
@@ -307,11 +307,11 @@ _dl_non_dynamic_init (void)
   /* Remember the last search directory added at startup.  */
   _dl_init_all_dirs = GL(dl_all_dirs);
 
-  _dl_lazy = *(getenv ("LD_BIND_NOW") ?: "") == '\0';
+  _dl_lazy = *(getenv ("GLIBC_LD_BIND_NOW") ?: getenv ("LD_BIND_NOW") ?: "") == '\0';
 
-  _dl_bind_not = *(getenv ("LD_BIND_NOT") ?: "") != '\0';
+  _dl_bind_not = *(getenv ("GLIBC_LD_BIND_NOT") ?: getenv ("LD_BIND_NOT") ?: "") != '\0';
 
-  _dl_dynamic_weak = *(getenv ("LD_DYNAMIC_WEAK") ?: "") == '\0';
+  _dl_dynamic_weak = *(getenv ("GLIBC_LD_DYNAMIC_WEAK") ?: getenv ("LD_DYNAMIC_WEAK") ?: "") == '\0';
 
 #ifdef DL_PLATFORM_INIT
   DL_PLATFORM_INIT;

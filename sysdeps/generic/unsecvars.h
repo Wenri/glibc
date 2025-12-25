@@ -19,6 +19,20 @@
   "LD_SHOW_AUXV\0"							      \
   "LD_VERBOSE\0"							      \
   "LD_WARN\0"								      \
+  "GLIBC_LD_AUDIT\0"							      \
+  "GLIBC_LD_BIND_NOT\0"							      \
+  "GLIBC_LD_BIND_NOW\0"							      \
+  "GLIBC_LD_DEBUG\0"							      \
+  "GLIBC_LD_DEBUG_OUTPUT\0"						      \
+  "GLIBC_LD_DYNAMIC_WEAK\0"						      \
+  "GLIBC_LD_HWCAP_MASK\0"						      \
+  "GLIBC_LD_LIBRARY_PATH\0"						      \
+  "GLIBC_LD_ORIGIN_PATH\0"						      \
+  "GLIBC_LD_PRELOAD\0"							      \
+  "GLIBC_LD_PROFILE\0"							      \
+  "GLIBC_LD_SHOW_AUXV\0"						      \
+  "GLIBC_LD_VERBOSE\0"							      \
+  "GLIBC_LD_WARN\0"							      \
   "LOCALDOMAIN\0"							      \
   "LOCPATH\0"								      \
   "MALLOC_ARENA_MAX\0"							      \

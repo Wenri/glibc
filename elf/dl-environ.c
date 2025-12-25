@@ -21,6 +21,22 @@
 #include <unistd.h>
 #include <ldsodefs.h>
 
+#define HAVE_LD_SUFFIX \
+  __builtin_expect ((*current)[0] == 'L', 0) && \
+  (*current)[1] == 'D' && \
+  (*current)[2] == '_'
+
+#define HAVE_GLIBC_SUFFIX \
+  __builtin_expect ((*current)[0] == 'G', 0) && \
+  (*current)[1] == 'L' && \
+  (*current)[2] == 'I' && \
+  (*current)[3] == 'B' && \
+  (*current)[4] == 'C' && \
+  (*current)[5] == '_' && \
+  (*current)[6] == 'L' && \
+  (*current)[7] == 'D' && \
+  (*current)[8] == '_'
+
 /* Walk through the environment of the process and return all entries
    starting with `LD_'.  */
 char *
@@ -31,16 +47,15 @@ _dl_next_ld_env_entry (char ***position)
 
   while (*current != NULL)
     {
-      if (__builtin_expect ((*current)[0] == 'L', 0)
-	  && (*current)[1] == 'D' && (*current)[2] == '_')
-	{
-	  result = &(*current)[3];
-
-	  /* Save current position for next visit.  */
-	  *position = ++current;
-
-	  break;
-	}
+      if (HAVE_LD_SUFFIX) {
+	result = &(*current)[3];
+        *position = ++current;
+        break;
+      } else if (HAVE_GLIBC_SUFFIX) {
+        result = &(*current)[9];
+        *position = ++current;
+        break;
+      }
 
       ++current;
     }

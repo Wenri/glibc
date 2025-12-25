@@ -187,7 +187,7 @@ setting environment variables (which would be inherited by subprocesses).\n\
                         object we can handle\n\
   --inhibit-cache       Do not use " LD_SO_CACHE "\n\
   --library-path PATH   use given PATH instead of content of the environment\n\
-                        variable LD_LIBRARY_PATH\n\
+                        variable LD_LIBRARY_PATH or GLIBC_LD_LIBRARY_PATH\n\
   --glibc-hwcaps-prepend LIST\n\
                         search glibc-hwcaps subdirectories in LIST\n\
   --glibc-hwcaps-mask LIST\n\
