@@ -49,9 +49,6 @@ _Fork (void)
       self->robust_prev = &self->robust_head;
 #endif
       self->robust_head.list = &self->robust_head;
-      INTERNAL_SYSCALL_CALL (set_robust_list, &self->robust_head,
-			     sizeof (struct robust_list_head));
-      call_function_static_weak (__getrandom_fork_subprocess);
     }
 
   __abort_lock_unlock (&original_sigmask);

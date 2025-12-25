@@ -80,58 +80,12 @@ extern unsigned int _rseq_size attribute_hidden;
    In .data.relro but not yet write-protected.  */
 extern ptrdiff_t _rseq_offset attribute_hidden;
 
-/* We want to use rtld_hidden_proto in order to call the internal aliases
-   of __rseq_size and __rseq_offset from ld.so.  This avoids dynamic symbol
-   binding at run time for both variables.  */
-rtld_hidden_proto (__rseq_size)
-rtld_hidden_proto (__rseq_offset)
-
-/* Returns a pointer to the current thread rseq area.  */
-static inline struct rseq_area *
-RSEQ_SELF (void)
-{
-  return (struct rseq_area *) ((char *) __thread_pointer () + __rseq_offset);
-}
-
-#ifdef RSEQ_SIG
-static inline bool
-rseq_register_current_thread (struct pthread *self, bool do_rseq)
-{
-  if (do_rseq)
-    {
-      unsigned int size =  __rseq_size;
-
-      /* The feature size can be smaller than the minimum rseq area size of 32
-         bytes accepted by the syscall, if this is the case, bump the size of
-         the registration to the minimum.  The 'extra TLS' block is always at
-         least 32 bytes. */
-      if (size < RSEQ_AREA_SIZE_INITIAL)
-        size = RSEQ_AREA_SIZE_INITIAL;
-
-      /* Initialize the whole rseq area to zero prior to registration.  */
-      memset (&self->rseq_area, 0, size);
-
-      /* Set the cpu_id field to RSEQ_CPU_ID_UNINITIALIZED, this is checked by
-         the kernel at registration when CONFIG_DEBUG_RSEQ is enabled.  */
-      THREAD_SETMEM (self, rseq_area.cpu_id, RSEQ_CPU_ID_UNINITIALIZED);
-
-      int ret = INTERNAL_SYSCALL_CALL (rseq, &self->rseq_area,
-                                       size, 0, RSEQ_SIG);
-      if (!INTERNAL_SYSCALL_ERROR_P (ret))
-        return true;
-    }
-  /* When rseq is disabled by tunables or the registration fails, inform
-     userspace by setting 'cpu_id' to RSEQ_CPU_ID_REGISTRATION_FAILED.  */
-  THREAD_SETMEM (self, rseq_area.cpu_id, RSEQ_CPU_ID_REGISTRATION_FAILED);
-  return false;
-}
-#else /* RSEQ_SIG */
+/* Android: rseq syscall is blocked by seccomp, always fail registration */
 static inline bool
 rseq_register_current_thread (struct pthread *self, bool do_rseq)
 {
   RSEQ_SETMEM (cpu_id, RSEQ_CPU_ID_REGISTRATION_FAILED);
   return false;
 }
-#endif /* RSEQ_SIG */
 
 #endif /* rseq-internal.h */
