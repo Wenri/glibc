@@ -75,6 +75,7 @@ struct filebuf
 #include <dl-machine-reject-phdr.h>
 #include <dl-prop.h>
 #include <not-cancel.h>
+#include "dl-android-paths.h"
 
 #include <endian.h>
 #if BYTE_ORDER == BIG_ENDIAN
@@ -460,6 +461,16 @@ fillin_rpath (char *rpath, struct r_search_path_elem **result, const char *sep,
 	     path or memory allocation failure.  */
 	  if (cp == NULL)
 	    continue;
+
+	  /* Android/nix-on-droid: Translate /nix/store paths in RPATH.  */
+	  {
+	    char *translated = _dl_android_translate_path (cp);
+	    if (translated != NULL)
+	      {
+		free (to_free);
+		to_free = cp = translated;
+	      }
+	  }
 
 	  /* Compute the length after dynamic string token expansion and
 	     ignore empty paths.  */
@@ -1960,6 +1971,22 @@ _dl_map_new_object (struct link_map *loader, const char *name,
 	origname = before;
     }
 #endif
+
+  /* Android/nix-on-droid: Translate /nix/store paths to Android prefix.
+     This is needed because binaries from nixpkgs cache have hardcoded
+     /nix/store paths, but on Android the store is at a different location.  */
+  {
+    char *translated = _dl_android_translate_path (name);
+    if (translated != NULL)
+      {
+	if (origname == NULL)
+	  origname = name;
+	name = translated;
+      }
+  }
+
+  /* Will be true if we found a DSO which is of the other ELF class.  */
+  bool found_other_class = false;
 
   if (strchr (name, '/') == NULL)
     {
