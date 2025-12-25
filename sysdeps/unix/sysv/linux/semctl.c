@@ -21,6 +21,7 @@
 #include <sysdep.h>
 #include <shlib-compat.h>
 #include <linux/posix_types.h>             /* For __kernel_mode_t.  */
+#include <fakesyscall.h>
 
 /* The struct used to issue the syscall.  For architectures that assume
    64-bit time as default (!__ASSUME_TIME64_SYSCALLS) the syscall will
@@ -121,7 +122,7 @@ static int
 semctl_syscall (int semid, int semnum, int cmd, semctl_arg_t arg)
 {
 #ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
-  return INLINE_SYSCALL_CALL (semctl, semid, semnum, cmd | __IPC_64,
+  return syscall (__NR_semctl, semid, semnum, cmd | __IPC_64,
 			      arg.array);
 #else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_semctl, semid, semnum, cmd | __IPC_64,
@@ -388,7 +389,7 @@ __old_semctl (int semid, int semnum, int cmd, ...)
  /* For architectures that have wire-up semctl but also have __IPC_64 to a
     value different than default (0x0) it means the compat symbol used the
     __NR_ipc syscall.  */
-  return INLINE_SYSCALL_CALL (semctl, semid, semnum, cmd, arg.array);
+  return syscall (__NR_semctl, semid, semnum, cmd, arg.array);
 # else
   return INLINE_SYSCALL_CALL (ipc, IPCOP_semctl, semid, semnum, cmd,
 			      SEMCTL_ARG_ADDRESS (arg));

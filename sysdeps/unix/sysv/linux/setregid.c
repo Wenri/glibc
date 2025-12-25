@@ -18,15 +18,16 @@
 #include <errno.h>
 #include <unistd.h>
 #include <setxid.h>
+#include <fakesyscall.h>
 
 
 int
 __setregid (gid_t rgid, gid_t egid)
 {
 #ifdef __NR_setregid32
-  return INLINE_SETXID_SYSCALL (setregid32, 2, rgid, egid);
+  return syscall (__NR_setregid32, 2, rgid, egid);
 #else
-  return INLINE_SETXID_SYSCALL (setregid, 2, rgid, egid);
+  return syscall (__NR_setregid, 2, rgid, egid);
 #endif
 }
 #ifndef __setregid
