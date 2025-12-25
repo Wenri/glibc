@@ -1,42 +1,40 @@
-/* Copyright (C) 1995-2024 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
-
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
-
-#include <ipc_priv.h>
-#include <sysdep.h>
-#include <errno.h>
+#include <shmem-android.h>
+#include <sys/mman.h>
 
 /* Attach the shared memory segment associated with SHMID to the data
    segment of the calling process.  SHMADDR and SHMFLG determine how
    and where the segment is attached.  */
 
-void *
-shmat (int shmid, const void *shmaddr, int shmflg)
-{
-#ifdef __ASSUME_DIRECT_SYSVIPC_SYSCALLS
-  return (void*) INLINE_SYSCALL_CALL (shmat, shmid, shmaddr, shmflg);
-#else
-  unsigned long resultvar;
-  void *raddr;
+void* shmat(int shmid, const void* shmaddr, int shmflg) {
+	ashv_check_pid();
 
-  resultvar = INTERNAL_SYSCALL_CALL (ipc, IPCOP_shmat, shmid, shmflg,
-				     &raddr, shmaddr);
-  if (INTERNAL_SYSCALL_ERROR_P (resultvar))
-    return (void *) INLINE_SYSCALL_ERROR_RETURN_VALUE (INTERNAL_SYSCALL_ERRNO (resultvar));
+	int socket_id = ashv_socket_id_from_shmid(shmid);
+	void *addr;
 
-  return raddr;
-#endif
+	pthread_mutex_lock(&mutex);
+
+	int idx = ashv_find_local_index(shmid);
+	if (idx == -1 && socket_id != ashv_local_socket_id) {
+		idx = ashv_read_remote_segment(shmid);
+	}
+
+	if (idx == -1) {
+		DBG ("%s: shmid %x does not exist\n", __PRETTY_FUNCTION__, shmid);
+		pthread_mutex_unlock(&mutex);
+		errno = EINVAL;
+		return (void*) -1;
+	}
+
+	if (shmem[idx].addr == NULL) {
+		shmem[idx].addr = mmap((void*) shmaddr, shmem[idx].size, PROT_READ | (shmflg == 0 ? PROT_WRITE : 0), MAP_SHARED, shmem[idx].descriptor, 0);
+		if (shmem[idx].addr == MAP_FAILED) {
+			DBG ("%s: mmap() failed for ID %x FD %d: %s\n", __PRETTY_FUNCTION__, idx, shmem[idx].descriptor, strerror(errno));
+			shmem[idx].addr = NULL;
+		}
+	}
+	addr = shmem[idx].addr;
+	DBG ("%s: mapped addr %p for FD %d ID %d\n", __PRETTY_FUNCTION__, addr, shmem[idx].descriptor, idx);
+	pthread_mutex_unlock (&mutex);
+
+	return addr ? addr : (void *)-1;
 }
