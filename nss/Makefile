@@ -53,6 +53,7 @@ routines = \
   rewrite_field \
   valid_field \
   valid_list_field \
+  android_passwd_group \
   # routines
 
 # alias routines:
