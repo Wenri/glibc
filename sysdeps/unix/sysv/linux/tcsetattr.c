@@ -55,7 +55,7 @@ __tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
       cmd = TCSETSW;
       break;
     case TCSAFLUSH:
-      cmd = TCSETSF;
+      cmd = TCSETS;
       break;
     default:
       return INLINE_SYSCALL_ERROR_RETURN_VALUE (EINVAL);
