@@ -477,13 +477,13 @@ fillin_rpath (char *rpath, struct r_search_path_elem **result, const char *sep,
 	  if (cp == NULL)
 	    continue;
 
-	  /* Android/nix-on-droid: Translate /nix/store paths in RPATH.  */
+	  /* Android/nix-on-droid: Process path (translate + glibc redirect).  */
 	  {
-	    char *translated = _dl_android_translate_path (cp);
-	    if (translated != NULL)
+	    char *processed = _dl_android_process_path (cp);
+	    if (processed != NULL)
 	      {
 		free (to_free);
-		to_free = cp = translated;
+		to_free = cp = processed;
 	      }
 	  }
 
@@ -1915,7 +1915,6 @@ _dl_map_object (struct link_map *loader, const char *name,
   int fd;
   const char *origname = NULL;
   char *realname;
-  char *name_copy;
   struct link_map *l;
   struct filebuf fb;
 
@@ -1976,19 +1975,6 @@ _dl_map_object (struct link_map *loader, const char *name,
 	origname = before;
     }
 #endif
-
-  /* Android/nix-on-droid: Translate /nix/store paths to Android prefix.
-     This is needed because binaries from nixpkgs cache have hardcoded
-     /nix/store paths, but on Android the store is at a different location.  */
-  {
-    char *translated = _dl_android_translate_path (name);
-    if (translated != NULL)
-      {
-	if (origname == NULL)
-	  origname = name;
-	name = translated;
-      }
-  }
 
   /* Will be true if we found a DSO which is of the other ELF class.  */
   bool found_other_class = false;
@@ -2178,6 +2164,7 @@ _dl_map_object (struct link_map *loader, const char *name,
 	  static const Elf_Symndx dummy_bucket = STN_UNDEF;
 
 	  /* Allocate a new object map.  */
+	  char *name_copy;
 	  if ((name_copy = __strdup (name)) == NULL
 	      || (l = _dl_new_object (name_copy, name, type, loader,
 				      mode, nsid)) == NULL)

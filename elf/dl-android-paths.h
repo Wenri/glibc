@@ -28,8 +28,10 @@
    in their RPATH/RUNPATH. This module intercepts library path lookups
    and redirects them to the real Android location.
 
-   This replaces the pack-audit.so LD_AUDIT module with built-in
-   path translation in ld.so itself.  */
+   Additionally, binaries built against standard glibc are redirected
+   to use our Android-patched glibc at runtime.
+
+   Returns malloc'd string. Caller must free.  */
 
 #include <string.h>
 #include <stdlib.h>
@@ -42,34 +44,104 @@
 #define ANDROID_REAL_STORE "/data/data/com.termux.nix/files/usr/nix/store"
 #define ANDROID_REAL_STORE_LEN (sizeof (ANDROID_REAL_STORE) - 1)
 
-/* Translate a library path from /nix/store to Android prefix.
-   Returns a newly allocated string if translation occurred,
-   or NULL if no translation was needed.
+/* Android glibc library path - set via CFLAGS at build time.
+   Format: full path to android glibc lib directory, e.g.
+   /data/data/com.termux.nix/files/usr/nix/store/XXX-glibc-android-2.40/lib  */
+#ifndef ANDROID_GLIBC_LIB
+#define ANDROID_GLIBC_LIB NULL
+#endif
 
-   The caller must free the returned string if non-NULL.  */
-static inline char *
-_dl_android_translate_path (const char *name)
+#ifdef ANDROID_GLIBC_LIB
+#define ANDROID_GLIBC_LIB_LEN (sizeof (ANDROID_GLIBC_LIB) - 1)
+#else
+#define ANDROID_GLIBC_LIB_LEN 0
+#endif
+
+/* Check if a path references standard glibc (not android glibc).
+   Standard glibc paths match: .../HASH-glibc-VERSION/lib/...
+   but do NOT contain "-glibc-android" in the derivation name.  */
+static inline int
+_dl_is_standard_glibc_path (const char *path)
 {
-  /* Quick check: does the path start with /nix/store?  */
-  if (name == NULL
-      || __builtin_strncmp (name, ANDROID_ORIGINAL_STORE,
-                            ANDROID_ORIGINAL_STORE_LEN) != 0)
+  if (path == NULL)
+    return 0;
+
+  /* Look for "-glibc-" pattern in path.  */
+  const char *glibc_marker = __builtin_strstr (path, "-glibc-");
+  if (glibc_marker == NULL)
+    return 0;
+
+  /* Check it's NOT android glibc.  */
+  if (__builtin_strncmp (glibc_marker, "-glibc-android", 14) == 0)
+    return 0;
+
+  /* Check it's a lib directory path.  */
+  if (__builtin_strstr (glibc_marker, "/lib") == NULL)
+    return 0;
+
+  return 1;
+}
+
+/* Process a library path for Android environment.
+   Performs two operations:
+   1. Translate /nix/store -> /data/data/.../nix/store
+   2. Redirect standard glibc paths -> android glibc
+
+   Returns malloc'd processed path, or NULL if no processing needed.
+   Caller must free the returned pointer.  */
+static inline char *
+_dl_android_process_path (const char *path)
+{
+  if (path == NULL)
     return NULL;
 
-  /* Path starts with /nix/store - translate it.  */
-  size_t suffix_len = __builtin_strlen (name) - ANDROID_ORIGINAL_STORE_LEN;
-  size_t new_len = ANDROID_REAL_STORE_LEN + suffix_len + 1;
+  const char *current = path;
+  char *translated = NULL;
 
-  char *result = malloc (new_len);
-  if (result == NULL)
-    return NULL;
+  /* Step 1: Translate /nix/store prefix if present.  */
+  if (__builtin_strncmp (path, ANDROID_ORIGINAL_STORE,
+                         ANDROID_ORIGINAL_STORE_LEN) == 0)
+    {
+      size_t suffix_len = __builtin_strlen (path + ANDROID_ORIGINAL_STORE_LEN);
+      size_t new_len = ANDROID_REAL_STORE_LEN + suffix_len;
 
-  __builtin_memcpy (result, ANDROID_REAL_STORE, ANDROID_REAL_STORE_LEN);
-  __builtin_memcpy (result + ANDROID_REAL_STORE_LEN,
-                    name + ANDROID_ORIGINAL_STORE_LEN,
-                    suffix_len + 1);
+      translated = (char *) malloc (new_len + 1);
+      if (translated == NULL)
+        return NULL;
 
-  return result;
+      __builtin_memcpy (translated, ANDROID_REAL_STORE, ANDROID_REAL_STORE_LEN);
+      __builtin_memcpy (translated + ANDROID_REAL_STORE_LEN,
+                        path + ANDROID_ORIGINAL_STORE_LEN,
+                        suffix_len + 1);
+      current = translated;
+    }
+
+  /* Step 2: Check if path needs glibc redirect.  */
+  if (ANDROID_GLIBC_LIB != NULL && _dl_is_standard_glibc_path (current))
+    {
+      const char *lib_start = __builtin_strstr (current, "/lib/");
+      if (lib_start != NULL)
+        {
+          /* Extract suffix after "/lib" (e.g., "/libpthread.so.0").  */
+          const char *suffix = lib_start + 4;
+          size_t suffix_len = __builtin_strlen (suffix);
+          size_t new_len = ANDROID_GLIBC_LIB_LEN + suffix_len;
+
+          char *redirected = (char *) malloc (new_len + 1);
+          if (redirected != NULL)
+            {
+              __builtin_memcpy (redirected, ANDROID_GLIBC_LIB,
+                                ANDROID_GLIBC_LIB_LEN);
+              __builtin_memcpy (redirected + ANDROID_GLIBC_LIB_LEN,
+                                suffix, suffix_len + 1);
+              free (translated);
+              return redirected;
+            }
+        }
+    }
+
+  /* Return translated path (may be NULL if no translation needed).  */
+  return translated;
 }
 
 #endif /* _DL_ANDROID_PATHS_H */
