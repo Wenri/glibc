@@ -119,23 +119,30 @@ _dl_android_process_path (const char *path)
   /* Step 2: Check if path needs glibc redirect.  */
   if (ANDROID_GLIBC_LIB != NULL && _dl_is_standard_glibc_path (current))
     {
-      const char *lib_start = __builtin_strstr (current, "/lib/");
+      /* Find /lib in the path - could be "/lib" at end (RPATH directory)
+         or "/lib/" followed by library name.  */
+      const char *lib_start = __builtin_strstr (current, "/lib");
       if (lib_start != NULL)
         {
-          /* Extract suffix after "/lib" (e.g., "/libpthread.so.0").  */
-          const char *suffix = lib_start + 4;
-          size_t suffix_len = __builtin_strlen (suffix);
-          size_t new_len = ANDROID_GLIBC_LIB_LEN + suffix_len;
-
-          char *redirected = (char *) malloc (new_len + 1);
-          if (redirected != NULL)
+          /* Check what follows /lib: either end of string, '/', or nothing valid.  */
+          char next_char = lib_start[4];
+          if (next_char == '\0' || next_char == '/')
             {
-              __builtin_memcpy (redirected, ANDROID_GLIBC_LIB,
-                                ANDROID_GLIBC_LIB_LEN);
-              __builtin_memcpy (redirected + ANDROID_GLIBC_LIB_LEN,
-                                suffix, suffix_len + 1);
-              free (translated);
-              return redirected;
+              /* Extract suffix after "/lib" (empty for directories, or "/libfoo.so").  */
+              const char *suffix = lib_start + 4;
+              size_t suffix_len = __builtin_strlen (suffix);
+              size_t new_len = ANDROID_GLIBC_LIB_LEN + suffix_len;
+
+              char *redirected = (char *) malloc (new_len + 1);
+              if (redirected != NULL)
+                {
+                  __builtin_memcpy (redirected, ANDROID_GLIBC_LIB,
+                                    ANDROID_GLIBC_LIB_LEN);
+                  __builtin_memcpy (redirected + ANDROID_GLIBC_LIB_LEN,
+                                    suffix, suffix_len + 1);
+                  free (translated);
+                  return redirected;
+                }
             }
         }
     }
