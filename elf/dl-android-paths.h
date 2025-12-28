@@ -151,4 +151,103 @@ _dl_android_process_path (const char *path)
   return translated;
 }
 
+/* Resolve symlinks in a path, translating /nix/store paths along the way.
+   This is needed because symlinks in the nix store may point to /nix/store/...
+   which doesn't exist on Android - we need to translate to the real path.
+
+   Returns malloc'd resolved path, or NULL on error.
+   Caller must free the returned pointer.  */
+static inline char *
+_dl_android_resolve_path (const char *path)
+{
+  if (path == NULL)
+    return NULL;
+
+  char current[PATH_MAX];
+  char link_target[PATH_MAX];
+  int loop_count = 0;
+  const int max_loops = 40;  /* Same as MAXSYMLINKS */
+
+  /* Start with the input path, possibly translated.  */
+  char *translated = _dl_android_process_path (path);
+  if (translated != NULL)
+    {
+      if (__builtin_strlen (translated) >= PATH_MAX)
+        {
+          free (translated);
+          return NULL;
+        }
+      __builtin_strcpy (current, translated);
+      free (translated);
+    }
+  else
+    {
+      if (__builtin_strlen (path) >= PATH_MAX)
+        return NULL;
+      __builtin_strcpy (current, path);
+    }
+
+  /* Resolve symlinks iteratively.  */
+  while (loop_count++ < max_loops)
+    {
+      struct stat64 st;
+      if (__lstat64 (current, &st) != 0)
+        break;  /* Can't stat, return what we have */
+
+      if (!S_ISLNK (st.st_mode))
+        break;  /* Not a symlink, we're done */
+
+      /* Read the symlink target.  */
+      ssize_t len = __readlink (current, link_target, PATH_MAX - 1);
+      if (len < 0)
+        break;  /* Can't read link, return what we have */
+      link_target[len] = '\0';
+
+      /* Translate the symlink target if needed.  */
+      translated = _dl_android_process_path (link_target);
+      if (translated != NULL)
+        {
+          if (__builtin_strlen (translated) >= PATH_MAX)
+            {
+              free (translated);
+              break;
+            }
+          __builtin_strcpy (current, translated);
+          free (translated);
+        }
+      else
+        {
+          /* Handle relative symlinks.  */
+          if (link_target[0] != '/')
+            {
+              /* Find directory of current path.  */
+              char *last_slash = __builtin_strrchr (current, '/');
+              if (last_slash != NULL)
+                {
+                  size_t dir_len = last_slash - current + 1;
+                  if (dir_len + __builtin_strlen (link_target) >= PATH_MAX)
+                    break;
+                  __builtin_memmove (current + dir_len, link_target,
+                                     __builtin_strlen (link_target) + 1);
+                }
+              else
+                {
+                  __builtin_strcpy (current, link_target);
+                }
+            }
+          else
+            {
+              __builtin_strcpy (current, link_target);
+            }
+        }
+    }
+
+  /* Return a copy of the resolved path.  */
+  size_t len = __builtin_strlen (current);
+  char *result = (char *) malloc (len + 1);
+  if (result != NULL)
+    __builtin_memcpy (result, current, len + 1);
+  return result;
+}
+
 #endif /* _DL_ANDROID_PATHS_H */
