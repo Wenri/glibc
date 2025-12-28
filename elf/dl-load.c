@@ -1585,8 +1585,20 @@ open_verify (const char *name, int fd,
 #endif
 
   if (fd == -1)
-    /* Open the file.  We always open files read-only.  */
-    fd = __open64_nocancel (name, O_RDONLY | O_CLOEXEC);
+    {
+      /* Android: Resolve symlinks with path translation before opening.
+         This handles symlinks in the nix store that point to /nix/store/...
+         which needs to be translated to /data/data/.../nix/store/...  */
+      char *resolved = _dl_android_resolve_path (name);
+      if (resolved != NULL)
+        {
+          fd = __open64_nocancel (resolved, O_RDONLY | O_CLOEXEC);
+          free (resolved);
+        }
+      else
+        /* Fall back to opening the original name.  */
+        fd = __open64_nocancel (name, O_RDONLY | O_CLOEXEC);
+    }
 
   if (fd != -1)
     {
