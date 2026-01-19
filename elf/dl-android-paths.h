@@ -46,7 +46,7 @@
 
 /* Android glibc library path - set via CFLAGS at build time.
    Format: full path to android glibc lib directory, e.g.
-   /data/data/com.termux.nix/files/usr/nix/store/XXX-glibc-android-2.40/lib  */
+   /data/data/com.termux.nix/files/usr/nix/store/XXX-glibc-2.40-a1/lib  */
 #ifndef ANDROID_GLIBC_LIB
 #define ANDROID_GLIBC_LIB NULL
 #endif
@@ -59,20 +59,44 @@
 
 /* Check if a path references standard glibc (not android glibc).
    Standard glibc paths match: .../HASH-glibc-VERSION/lib/...
-   but do NOT contain "-glibc-android" in the derivation name.  */
+   We identify Android glibc by comparing against ANDROID_GLIBC_LIB.  */
 static inline int
 _dl_is_standard_glibc_path (const char *path)
 {
   if (path == NULL)
     return 0;
 
+  /* First, check if this IS our Android glibc - don't redirect ourselves!
+     ANDROID_GLIBC_LIB contains the full path to Android glibc lib dir.
+     We extract the hash portion and compare.  */
+  if (ANDROID_GLIBC_LIB != NULL)
+    {
+      /* Find hash in ANDROID_GLIBC_LIB (after last /nix/store/).  */
+      const char *android_hash = __builtin_strstr (ANDROID_GLIBC_LIB, "/nix/store/");
+      if (android_hash != NULL)
+        {
+          android_hash += 11;  /* Skip "/nix/store/" */
+          /* Find hash in input path.  */
+          const char *path_hash = __builtin_strstr (path, "/nix/store/");
+          if (path_hash != NULL)
+            {
+              path_hash += 11;  /* Skip "/nix/store/" */
+              /* Compare the 32-char hash + package name up to /lib.  */
+              const char *android_lib = __builtin_strstr (android_hash, "/lib");
+              if (android_lib != NULL)
+                {
+                  size_t cmp_len = android_lib - android_hash;
+                  if (__builtin_strncmp (path_hash, android_hash, cmp_len) == 0
+                      && (path_hash[cmp_len] == '/' || path_hash[cmp_len] == '\0'))
+                    return 0;  /* This IS Android glibc, not standard */
+                }
+            }
+        }
+    }
+
   /* Look for "-glibc-" pattern in path.  */
   const char *glibc_marker = __builtin_strstr (path, "-glibc-");
   if (glibc_marker == NULL)
-    return 0;
-
-  /* Check it's NOT android glibc.  */
-  if (__builtin_strncmp (glibc_marker, "-glibc-android", 14) == 0)
     return 0;
 
   /* Check it's a lib directory path.  */
