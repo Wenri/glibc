@@ -230,6 +230,9 @@
 /* For uintptr_t.  */
 #include <stdint.h>
 
+/* For stdc_count_ones.  */
+#include <stdbit.h>
+
 /* For va_arg, va_start, va_end.  */
 #include <stdarg.h>
 
@@ -294,9 +297,9 @@
 # define TCACHE_SMALL_BINS		64
 # define TCACHE_LARGE_BINS		12 /* Up to 4M chunks */
 # define TCACHE_MAX_BINS	(TCACHE_SMALL_BINS + TCACHE_LARGE_BINS)
-# define MAX_TCACHE_SMALL_SIZE	tidx2usize (TCACHE_SMALL_BINS-1)
+# define MAX_TCACHE_SMALL_SIZE	tidx2csize (TCACHE_SMALL_BINS-1)
 
-/* Only used to pre-fill the tunables.  */
+# define tidx2csize(idx)	(((size_t) idx) * MALLOC_ALIGNMENT + MINSIZE)
 # define tidx2usize(idx)	(((size_t) idx) * MALLOC_ALIGNMENT + MINSIZE - SIZE_SZ)
 
 /* When "x" is from chunksize().  */
@@ -1932,7 +1935,7 @@ static struct malloc_par mp_ =
   ,
   .tcache_count = TCACHE_FILL_COUNT,
   .tcache_small_bins = TCACHE_SMALL_BINS,
-  .tcache_max_bytes = MAX_TCACHE_SMALL_SIZE,
+  .tcache_max_bytes = MAX_TCACHE_SMALL_SIZE + 1,
   .tcache_unsorted_limit = 0 /* No limit.  */
 #endif
 };
@@ -3152,6 +3155,19 @@ tcache_key_initialize (void)
   if (__getrandom_nocancel_nostatus_direct (&tcache_key, sizeof(tcache_key),
 					    GRND_NONBLOCK)
       != sizeof (tcache_key))
+    tcache_key = 0;
+
+  /* We need tcache_key to be non-zero (otherwise tcache_double_free_verify's
+     clearing of e->key would go unnoticed and it would loop getting called
+     through __libc_free), and we want tcache_key not to be a
+     commonly-occurring value in memory, so ensure a minimum amount of one and
+     zero bits.  */
+  int minimum_bits = __WORDSIZE / 4;
+  int maximum_bits = __WORDSIZE - minimum_bits;
+
+  while (labs ((intptr_t) tcache_key) <= 0x1000000
+      || stdc_count_ones (tcache_key) < minimum_bits
+      || stdc_count_ones (tcache_key) > maximum_bits)
     {
       tcache_key = random_bits ();
 #if __WORDSIZE == 64
@@ -3208,11 +3224,10 @@ tcache_get_n (size_t tc_idx, tcache_entry **ep, bool mangled)
   if (__glibc_unlikely (misaligned_mem (e)))
     malloc_printerr ("malloc(): unaligned tcache chunk detected");
 
-  void *ne = e == NULL ? NULL : REVEAL_PTR (e->next);
   if (!mangled)
-    *ep = ne;
+    *ep = REVEAL_PTR (e->next);
   else
-    *ep = PROTECT_PTR (ep, ne);
+    *ep = PROTECT_PTR (ep, REVEAL_PTR (e->next));
 
   ++(tcache->num_slots[tc_idx]);
   e->key = 0;
@@ -3229,7 +3244,7 @@ tcache_put (mchunkptr chunk, size_t tc_idx)
 static __always_inline void *
 tcache_get (size_t tc_idx)
 {
-  return tcache_get_n (tc_idx, & tcache->entries[tc_idx], false);
+  return tcache_get_n (tc_idx, &tcache->entries[tc_idx], false);
 }
 
 static __always_inline tcache_entry **
@@ -5152,7 +5167,7 @@ _int_memalign (mstate av, size_t alignment, size_t bytes)
   INTERNAL_SIZE_T size;
 
   nb = checked_request2size (bytes);
-  if (nb == 0)
+  if (nb == 0 || alignment > PTRDIFF_MAX)
     {
       __set_errno (ENOMEM);
       return NULL;
@@ -5168,7 +5183,10 @@ _int_memalign (mstate av, size_t alignment, size_t bytes)
      we don't find anything in those bins, the common malloc code will
      scan starting at 2x.  */
 
-  /* Call malloc with worst case padding to hit alignment. */
+  /* Call malloc with worst case padding to hit alignment.  ALIGNMENT is a
+     power of 2, so it tops out at (PTRDIFF_MAX >> 1) + 1, leaving plenty of
+     space to add MINSIZE and whatever checked_request2size adds to BYTES to
+     get NB.  Consequently, total below also does not overflow.  */
   m = (char *) (_int_malloc (av, nb + alignment + MINSIZE));
 
   if (m == NULL)
@@ -5587,15 +5605,13 @@ do_set_arena_max (size_t value)
 static __always_inline int
 do_set_tcache_max (size_t value)
 {
+  if (value > PTRDIFF_MAX)
+    return 0;
+
   size_t nb = request2size (value);
   size_t tc_idx = csize2tidx (nb);
 
-  /* To check that value is not too big and request2size does not return an
-     overflown value.  */
-  if (value > nb)
-    return 0;
-
-  if (nb > MAX_TCACHE_SMALL_SIZE)
+  if (tc_idx >= TCACHE_SMALL_BINS)
     tc_idx = large_csize2tidx (nb);
 
   LIBC_PROBE (memory_tunable_tcache_max_bytes, 2, value, mp_.tcache_max_bytes);
@@ -5604,7 +5620,7 @@ do_set_tcache_max (size_t value)
     {
       if (tc_idx < TCACHE_SMALL_BINS)
 	mp_.tcache_small_bins = tc_idx + 1;
-      mp_.tcache_max_bytes = nb;
+      mp_.tcache_max_bytes = nb + 1;
       return 1;
     }
 

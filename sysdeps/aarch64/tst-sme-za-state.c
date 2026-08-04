@@ -16,47 +16,9 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <stdio.h>
+#include "tst-sme-skeleton.c"
+
 #include <setjmp.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/auxv.h>
-
-#include <support/check.h>
-#include <support/support.h>
-#include <support/test-driver.h>
-
-#include "tst-sme-helper.h"
-
-static uint8_t *state;
-
-static void
-enable_sme_za_state (struct blk *ptr)
-{
-  set_tpidr2 (ptr);
-  start_za ();
-  load_za (state);
-}
-
-static void
-check_sme_za_state (const char msg[], bool clear)
-{
-  unsigned long svcr = get_svcr ();
-  void *tpidr2 = get_tpidr2 ();
-  printf ("[%s]\n", msg);
-  printf ("svcr = %016lx\n", svcr);
-  printf ("tpidr2 = %016lx\n", (unsigned long)tpidr2);
-  if (clear)
-    {
-      TEST_VERIFY (svcr == 0);
-      TEST_VERIFY (tpidr2 == NULL);
-    }
-  else
-    {
-      TEST_VERIFY (svcr != 0);
-      TEST_VERIFY (tpidr2 != NULL);
-    }
-}
 
 static void
 run (struct blk *ptr)
@@ -88,32 +50,3 @@ run (struct blk *ptr)
   TEST_COMPARE (ret, 42);
   check_sme_za_state ("after longjmp", /* Clear.  */ true);
 }
-
-static int
-do_test (void)
-{
-  unsigned long hwcap2 = getauxval (AT_HWCAP2);
-  if ((hwcap2 & HWCAP2_SME) == 0)
-    return EXIT_UNSUPPORTED;
-
-  /* Get current streaming SVE vector register size.  */
-  svl = get_svl ();
-  printf ("svl: %lu\n", svl);
-  TEST_VERIFY_EXIT (!(svl < 16 || svl % 16 != 0 || svl >= (1 << 16)));
-
-  /* Initialise buffer for ZA state of SME.  */
-  state = xmalloc (svl * svl);
-  memset (state, 1, svl * svl);
-  struct blk blk = {
-    .za_save_buffer = state,
-    .num_za_save_slices = svl,
-    .__reserved = {0},
-  };
-
-  run (&blk);
-
-  free (state);
-  return 0;
-}
-
-#include <support/test-driver.c>

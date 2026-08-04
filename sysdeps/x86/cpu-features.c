@@ -543,6 +543,8 @@ enum intel_microarch
   INTEL_BIGCORE_PANTHERLAKE,
   INTEL_BIGCORE_GRANITERAPIDS,
   INTEL_BIGCORE_DIAMONDRAPIDS,
+  INTEL_BIGCORE_WILDCATLAKE,
+  INTEL_BIGCORE_NOVALAKE,
 
   /* Mixed (bigcore + atom SOC).  */
   INTEL_MIXED_LAKEFIELD,
@@ -702,6 +704,8 @@ intel_get_fam6_microarch (unsigned int model,
       return INTEL_BIGCORE_ARROWLAKE;
     case 0xCC:
       return INTEL_BIGCORE_PANTHERLAKE;
+    case 0xD5:
+      return INTEL_BIGCORE_WILDCATLAKE;
     case 0xAD:
     case 0xAE:
       return INTEL_BIGCORE_GRANITERAPIDS;
@@ -818,6 +822,17 @@ disable_tsx:
 	      break;
 	    }
 	}
+      else if (family == 18)
+	switch (model)
+	  {
+	  case 0x01:
+	  case 0x03:
+	    microarch = INTEL_BIGCORE_NOVALAKE;
+	    break;
+
+	  default:
+	    break;
+	  }
       else if (family == 19)
 	switch (model)
 	  {
@@ -934,6 +949,8 @@ disable_tsx:
 	case INTEL_BIGCORE_LUNARLAKE:
 	case INTEL_BIGCORE_ARROWLAKE:
 	case INTEL_BIGCORE_PANTHERLAKE:
+	case INTEL_BIGCORE_WILDCATLAKE:
+	case INTEL_BIGCORE_NOVALAKE:
 	case INTEL_BIGCORE_SAPPHIRERAPIDS:
 	case INTEL_BIGCORE_EMERALDRAPIDS:
 	case INTEL_BIGCORE_GRANITERAPIDS:
