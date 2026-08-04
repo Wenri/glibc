@@ -75,6 +75,7 @@ struct filebuf
 #include <dl-machine-reject-phdr.h>
 #include <dl-prop.h>
 #include <not-cancel.h>
+#include "dl-android-paths.h"
 
 #include <endian.h>
 #if BYTE_ORDER == BIG_ENDIAN
@@ -460,6 +461,16 @@ fillin_rpath (char *rpath, struct r_search_path_elem **result, const char *sep,
 	     path or memory allocation failure.  */
 	  if (cp == NULL)
 	    continue;
+
+	  /* Android/nix-on-droid: Process path (translate + glibc redirect).  */
+	  {
+	    char *processed = _dl_android_process_path (cp);
+	    if (processed != NULL)
+	      {
+		free (to_free);
+		to_free = cp = processed;
+	      }
+	  }
 
 	  /* Compute the length after dynamic string token expansion and
 	     ignore empty paths.  */
@@ -1569,8 +1580,20 @@ open_verify (const char *name, int fd,
 #endif
 
   if (fd == -1)
-    /* Open the file.  We always open files read-only.  */
-    fd = __open64_nocancel (name, O_RDONLY | O_CLOEXEC);
+    {
+      /* Android: Resolve symlinks with path translation before opening.
+         This handles symlinks in the nix store that point to /nix/store/...
+         which needs to be translated to /data/data/.../nix/store/...  */
+      char *resolved = _dl_android_resolve_path (name);
+      if (resolved != NULL)
+        {
+          fd = __open64_nocancel (resolved, O_RDONLY | O_CLOEXEC);
+          free (resolved);
+        }
+      else
+        /* Fall back to opening the original name.  */
+        fd = __open64_nocancel (name, O_RDONLY | O_CLOEXEC);
+    }
 
   if (fd != -1)
     {
