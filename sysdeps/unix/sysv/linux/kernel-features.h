@@ -56,7 +56,7 @@
 
 /* The termios2 interface was introduced across all architectures except
    Alpha in kernel 2.6.22. */
-#define __ASSUME_TERMIOS2	1
+#define __ASSUME_TERMIOS2	0
 
 /* Support for various CLOEXEC and NONBLOCK flags was added in
    2.6.27.  */

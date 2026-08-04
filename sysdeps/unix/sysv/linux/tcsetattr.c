@@ -23,7 +23,7 @@
 int
 __tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
 {
-  struct termios2 k_termios;
+  struct termios k_termios;
   unsigned long cmd;
 
   memset (&k_termios, 0, sizeof k_termios);
@@ -37,7 +37,7 @@ __tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
   k_termios.c_ospeed = termios_p->c_ospeed;
   k_termios.c_ispeed = termios_p->c_ispeed;
 
-  ___termios2_canonicalize_speeds (&k_termios);
+  ___termios_canonicalize_speeds (&k_termios);
 
   copy_c_cc (k_termios.c_cc, _TERMIOS2_NCCS, termios_p->c_cc, NCCS);
 
@@ -53,8 +53,6 @@ __tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
    */
   static_assert_equal(TCSADRAIN, TCSANOW + 1);
   static_assert_equal(TCSAFLUSH, TCSANOW + 2);
-  static_assert_equal(TCSETSW2,  TCSETS2 + 1);
-  static_assert_equal(TCSETSF2,  TCSETS2 + 2);
   static_assert_equal(TCSETSW,   TCSETS  + 1);
   static_assert_equal(TCSETSF,   TCSETS  + 2);
 
@@ -62,16 +60,19 @@ __tcsetattr (int fd, int optional_actions, const struct termios *termios_p)
   if (cmd > 2)
     return INLINE_SYSCALL_ERROR_RETURN_VALUE (EINVAL);
 
-  if (__ASSUME_TERMIOS2 ||
-      k_termios.c_ospeed != k_termios.c_ispeed ||
-      cbaud (k_termios.c_cflag) == __BOTHER)
+  k_termios.c_cflag &= ~CIBAUD;
+
+  switch (optional_actions)
     {
-      cmd += TCSETS2;
-    }
-  else
-    {
+    case TCSANOW:
+    case TCSADRAIN:
       cmd += TCSETS;
-      k_termios.c_cflag &= ~CIBAUD;
+      break;
+    case TCSAFLUSH:
+      cmd = TCSETS;
+      break;
+    default:
+      break;
     }
 
   return INLINE_SYSCALL_CALL (ioctl, fd, cmd, &k_termios);

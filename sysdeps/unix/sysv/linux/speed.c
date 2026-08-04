@@ -230,7 +230,7 @@ ___speed_to_cbaud (speed_t speed)
 
 
 /* Canonicalize the representation of speed fields in a kernel
-   termios2 structure.  Specifically, if there is a valid legacy cbaud
+   termios structure.  Specifically, if there is a valid legacy cbaud
    representation (not __BOTHER), use it and propagate the
    corresponding speed value to ispeed/ospeed, otherwise the other way
    around if possible.  Finally, if the input speed is zero, copy the
@@ -241,7 +241,7 @@ ___speed_to_cbaud (speed_t speed)
 
    This is used by tcgetattr() and tcsetattr(). */
 void
-___termios2_canonicalize_speeds (struct termios2 *k_termios_p)
+___termios_canonicalize_speeds (struct termios *k_termios_p)
 {
   k_termios_p->c_ospeed =
       ___cbaud_to_speed (cbaud (k_termios_p->c_cflag),  k_termios_p->c_ospeed);

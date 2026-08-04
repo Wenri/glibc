@@ -137,7 +137,7 @@ ___speed_to_cbaud (speed_t speed)
     __attribute_const__ attribute_hidden;
 
 extern void
-___termios2_canonicalize_speeds (struct termios2 *k_termios_p)
+___termios_canonicalize_speeds (struct termios *k_termios_p)
     attribute_hidden;
 
 #endif /* TERMIOS_INTERNALS_H */

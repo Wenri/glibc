@@ -21,12 +21,12 @@
 int
 __tcgetattr (int fd, struct termios *termios_p)
 {
-  struct termios2 k_termios;
-  long int retval = INLINE_SYSCALL_CALL (ioctl, fd, TCGETS2, &k_termios);
+  struct termios k_termios;
+  long int retval = INLINE_SYSCALL_CALL (ioctl, fd, TCGETS, &k_termios);
 
   if (__glibc_likely (retval != -1))
     {
-      ___termios2_canonicalize_speeds (&k_termios);
+      ___termios_canonicalize_speeds (&k_termios);
 
       memset (termios_p, 0, sizeof (*termios_p));
       termios_p->c_iflag  = k_termios.c_iflag;
