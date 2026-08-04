@@ -116,6 +116,22 @@ prepare_address_space (int fd, size_t total, size_t *reserved, int *xflags,
 }
 
 
+static int
+open_locale_archive (const char * archivefname, int flags)
+{
+  int fd = -1;
+  char *versioned_path = secure_getenv ("LOCALE_ARCHIVE_2_27");
+  char *path = secure_getenv ("LOCALE_ARCHIVE");
+  if (versioned_path)
+    fd = open64 (versioned_path, flags);
+  if (path && fd < 0)
+    fd = open64 (path, flags);
+  if (fd < 0)
+    fd = open64 (archivefname, flags);
+  return fd;
+}
+
+
 static void
 create_archive (const char *archivefname, struct locarhandle *ah)
 {
@@ -577,7 +593,7 @@ open_archive (struct locarhandle *ah, bool readonly)
   while (1)
     {
       /* Open the archive.  We must have exclusive write access.  */
-      fd = open64 (archivefname, readonly ? O_RDONLY : O_RDWR);
+      fd = open_locale_archive (archivefname, readonly ? O_RDONLY : O_RDWR);
       if (fd == -1)
 	{
 	  /* Maybe the file does not yet exist? If we are opening
