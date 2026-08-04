@@ -73,8 +73,20 @@ internal_setent (FILE **stream)
 
   if (*stream == NULL)
     {
-      *stream = __nss_files_fopen (DATAFILE);
+      const char *file = DATAFILE;
 
+      #ifdef NIX_DATAFILE
+      // use the Nix environment variable such as `NIX_ETC_PROTOCOLS`
+      char *path = secure_getenv (NIX_DATAFILE);
+
+      // if the environment variable is set, then read from the /nix/store entry instead
+      if (path && path[0]) {
+        file = path;
+      }
+      #endif
+      
+      *stream = __nss_files_fopen (file);
+    
       if (*stream == NULL)
 	status = errno == EAGAIN ? NSS_STATUS_TRYAGAIN : NSS_STATUS_UNAVAIL;
     }
