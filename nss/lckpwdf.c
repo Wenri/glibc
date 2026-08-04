@@ -29,7 +29,7 @@
 
 
 /* Name of the lock file.  */
-#define PWD_LOCKFILE "/etc/.pwd.lock"
+#define PWD_LOCKFILE "/data/data/com.termux.nix/files/usr/etc/.pwd.lock"
 
 /* How long to wait for getting the lock before returning with an
    error.  */

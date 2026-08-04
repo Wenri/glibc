@@ -58,7 +58,7 @@
 	"/lib32/ilp32",							\
 	NULL,								\
       };								\
-      const size_t lib_len = sizeof ("/lib") - 1;			\
+      const size_t lib_len = sizeof ("/data/data/com.termux.nix/files/usr/lib") - 1;			\
       size_t len = strlen (dir);					\
       char path[len + 10];						\
       const char **ptr;							\

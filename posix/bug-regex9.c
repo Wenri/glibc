@@ -23,7 +23,7 @@
 #include <stdlib.h>
 
 
-static const char text[] = "#! /bin/sh";
+static const char text[] = "#! /data/data/com.termux.nix/files/usr/bin/sh";
 
 int
 main (void)

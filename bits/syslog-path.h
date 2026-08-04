@@ -23,6 +23,6 @@
 #ifndef _BITS_SYSLOG_PATH_H
 #define _BITS_SYSLOG_PATH_H 1
 
-#define	_PATH_LOG	"/dev/log"
+#define	_PATH_LOG	"/dev/socket/logdw"
 
 #endif /* bits/syslog-path.h */

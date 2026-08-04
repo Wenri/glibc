@@ -62,7 +62,7 @@ main (int argc, char **argv)
 
   if (argc == 2 && !strcmp (argv[1], "-opipe"))
     {
-      out = popen ("/bin/cat", "w");
+      out = popen ("/data/data/com.termux.nix/files/usr/bin/cat", "w");
       if (out == NULL)
 	{
 	  perror ("popen: /bin/cat");
@@ -71,7 +71,7 @@ main (int argc, char **argv)
     }
   else if (argc == 3 && !strcmp (argv[1], "-ipipe"))
     {
-      sprintf (buf, "/bin/cat %s", argv[2]);
+      sprintf (buf, "/data/data/com.termux.nix/files/usr/bin/cat %s", argv[2]);
       in = popen (buf, "r");
       if (in == NULL)
 	{

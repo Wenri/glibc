@@ -39,7 +39,7 @@
 
 #define ENTNAME_r	CONCAT(ENTNAME,_r)
 
-#define DATAFILE	"/etc/" DATABASE
+#define DATAFILE	"/data/data/com.termux.nix/files/usr/etc/" DATABASE
 
 #ifdef NEED_H_ERRNO
 # include <netdb.h>

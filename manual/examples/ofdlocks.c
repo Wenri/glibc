@@ -23,7 +23,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 
-#define FILENAME	"/tmp/foo"
+#define FILENAME	"/data/data/com.termux.nix/files/tmp/foo"
 #define NUM_THREADS	3
 #define ITERATIONS	5
 
@@ -39,7 +39,7 @@ thread_start (void *arg)
     .l_len = 1,
   };
 
-  fd = open ("/tmp/foo", O_RDWR | O_CREAT, 0666);
+  fd = open ("/data/data/com.termux.nix/files/tmp/foo", O_RDWR | O_CREAT, 0666);
 
   for (i = 0; i < ITERATIONS; i++)
     {

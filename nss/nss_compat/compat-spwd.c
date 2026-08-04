@@ -178,7 +178,7 @@ internal_setspent (ent_t *ent, int stayopen, int needent)
 
   if (ent->stream == NULL)
     {
-      ent->stream = __nss_files_fopen ("/etc/shadow");
+      ent->stream = __nss_files_fopen ("/data/data/com.termux.nix/files/usr/etc/shadow");
 
       if (ent->stream == NULL)
 	status = errno == EAGAIN ? NSS_STATUS_TRYAGAIN : NSS_STATUS_UNAVAIL;

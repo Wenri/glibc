@@ -42,7 +42,7 @@ internal_setent (FILE **stream)
 
   if (*stream == NULL)
     {
-      *stream = __nss_files_fopen ("/etc/aliases");
+      *stream = __nss_files_fopen ("/data/data/com.termux.nix/files/usr/etc/aliases");
 
       if (*stream == NULL)
 	status = errno == EAGAIN ? NSS_STATUS_TRYAGAIN : NSS_STATUS_UNAVAIL;
@@ -58,7 +58,7 @@ internal_setent (FILE **stream)
 enum nss_status
 _nss_files_setaliasent (void)
 {
-  return __nss_files_data_setent (nss_file_aliasent, "/etc/aliases");
+  return __nss_files_data_setent (nss_file_aliasent, "/data/data/com.termux.nix/files/usr/etc/aliases");
 }
 libc_hidden_def (_nss_files_setaliasent)
 
@@ -338,7 +338,7 @@ _nss_files_getaliasent_r (struct aliasent *result, char *buffer, size_t buflen,
 
   struct nss_files_per_file_data *data;
   enum nss_status status = __nss_files_data_open (&data, nss_file_aliasent,
-						  "/etc/aliases", errnop, NULL);
+						  "/data/data/com.termux.nix/files/usr/etc/aliases", errnop, NULL);
   if (status != NSS_STATUS_SUCCESS)
     return status;
 

@@ -21,7 +21,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#define SERVER	"/tmp/serversocket"
+#define SERVER	"/data/data/com.termux.nix/files/tmp/serversocket"
 #define MAXMSG	512
 
 int

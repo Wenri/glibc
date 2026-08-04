@@ -671,7 +671,7 @@ init (void)
   /* The test_dir test driver variable is not yet set at this point.  */
   const char *tmpdir = getenv ("TMPDIR");
   if (tmpdir == NULL || tmpdir[0] == '\0')
-    tmpdir = "/tmp";
+    tmpdir = "/data/data/com.termux.nix/files/tmp";
 
   char *prefix = xasprintf ("%s/glibc-tst-fuse.", tmpdir);
   support_fuse_mountpoints = support_fuse_mkdir (prefix);

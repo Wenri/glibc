@@ -106,7 +106,7 @@ _IO_old_proc_open (FILE *fp, const char *command, const char *mode)
       for (p = old_proc_file_chain; p; p = p->next)
 	__close (_IO_fileno ((FILE *) p));
 
-      execl ("/bin/sh", "sh", "-c", command, (char *) 0);
+      execl ("/data/data/com.termux.nix/files/usr/bin/sh", "sh", "-c", command, (char *) 0);
       _exit (127);
     }
   __close (child_end);
