@@ -1,0 +1,115 @@
+# Vendor sources present in this directory that NOTHING COMPILES.
+#
+# 163 .c files are imported; 117 are named by the android-{wrappers,support,
+# syscall}-* tables in ../Makefile.  The other 49 are listed here, with the
+# reason each is not wired.  verify-fc.sh check 6 asserts this file equals the
+# set-difference exactly, so a file cannot quietly join or leave it.
+#
+# The point is not tidiness.  A .c file sitting next to 114 that ARE compiled
+# reads as compiled, and the tree offered no way to tell.  Two of these
+# (__readlink_chk, __readlinkat_chk) are in verify-fc.sh's adapted_set, so they
+# are diffed against vendor on every run, and are documented as
+# ANDROID_DISABLE_NARROW readers -- three signals that they are live, against
+# zero that they are not.  They contain two of the five copies of the narrow
+# rule, and neither can be tested.
+#
+# Wiring anything here is a real change, not a formality: it needs the ten
+# numbered preconditions in docs/ANDROID-GLIBC.md, and several of these files
+# are landmines (glob64.c still carries the unchecked-expand NULL deref and the
+# `rc < 0' bug that fc-glob_lstat_compat.c was just fixed for).
+#
+# Format: one basename per line, no .c extension.  Keep sorted within a group.
+
+# -- Standalone test programs.  Compiled by hand, per the recipe in each
+#    file's header comment; never part of libc.
+behave-test
+exec-test
+safety-test
+sigsys-test
+smoke-test
+
+# -- Preprocess to nothing anyway: their HAVE_* guard is deliberately left
+#    undefined in config.h:242-275, so the body is #ifdef-ed out even if wired.
+#    Harmless, and kept so the vendor diff stays meaningful.
+__fxstatat
+__fxstatat64
+__lxstat
+__lxstat64
+__opendir2
+__xmknod
+__xmknodat
+__xstat
+__xstat64
+_xftw
+_xftw64
+
+# -- Documented never-wire, with the rationale in ../Makefile or
+#    docs/ANDROID-GLIBC.md.  sigaction is ld.so's (fc-syscall.c:110-115); its
+#    companion sigaction.h IS live, included by ../dl-sigsys.c.
+__statfs
+audit_log_acct_message
+close_range
+popen
+sigaction
+
+# -- fts/ftw: not a gap.  Both descend by dirfd + basename through wrapped
+#    __openat64_nocancel / __opendir, so the translation already applies.
+#    fts.c and ftw.c are reached only via fts64.c/ftw64.c, which are here too.
+fts
+fts64
+ftw
+ftw64
+
+# -- FORTIFY _chk entry points.  glibc's own __readlink_chk calls __readlink,
+#    __realpath_chk calls __realpath, __open_2 calls __open -- and the wrapper
+#    owns every one of those __-names.  So _FORTIFY_SOURCE builds are already
+#    translated and these add nothing.
+__getcwd_chk
+__getwd_chk
+__open64_2
+__open_2
+__openat64_2
+__openat_2
+__readlink_chk
+__readlinkat_chk
+__realpath_chk
+
+# -- Plain __open/__open64: same reasoning, glibc's own definitions resolve to
+#    the wrapped names.
+__open
+__open64
+
+# -- dlfcn/elf.  NOT wired, and this is a known gap rather than a decision:
+#    dladdr/dl_iterate_phdr do not narrow the paths they return, and dlopen
+#    does not accept the narrow paths every other libc readback hands you.
+#    See "Known limitations" in docs/ANDROID-GLIBC.md.
+dl_iterate_phdr
+dladdr
+dlmopen
+dlopen
+
+# -- glob64: LFS collapse makes it the same function as glob on this arch, and
+#    android/glob.c already emits glob64 via versioned_symbol.  Wiring both
+#    would be the __statfs double-wrapper hazard.
+glob64
+
+# -- posix_spawn/posix_spawnp: superseded by the in-place route
+#    (-DANDROID_SPAWN_FACTION_TRANSLATE / -DANDROID_SPAWN_STACK, ../Makefile),
+#    which translates at action-registration time rather than inside the vfork
+#    child.
+posix_spawn
+posix_spawnp
+
+# -- gnulib replacement, unused in glibc.
+rpl_lstat
+
+# -- libc-compat shims glibc already provides.  Note the asymmetry: the
+#    HEADERS are live (strlcpy.h is included by 18 compiled files and maps
+#    strlcpy onto glibc's __strlcpy) -- only these bodies are dead.
+#    rawmemchr is the exception: its only includer is strchrnul.c, itself
+#    unwired, so rawmemchr.c AND rawmemchr.h are both entirely dead.
+rawmemchr
+setenv
+stpcpy
+strchrnul
+strlcpy

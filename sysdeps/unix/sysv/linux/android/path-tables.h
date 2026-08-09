@@ -4,10 +4,18 @@
    configure (--with-android-exclude-path / --with-android-include-path).  glibc
    cannot take a Boost dependency, so the same two lists are expanded here.
 
-   SOURCE OF TRUTH: common/pkgs/android-fakechroot.nix (excludePath /
-   includePath).  Keep in step with it; the semantics are in
-   libfakechroot.c:match_prefix_list -- a prefix matches only when followed by
-   '/' or end-of-string, and the include list overrides the exclude list.
+   THIS FILE IS THE SOURCE OF TRUTH.  It used to be a copy of
+   common/pkgs/android-fakechroot.nix (excludePath / includePath), which
+   configured fakechroot's own build; that package is gone, and with it the only
+   other copy.  verify-fc.sh check 6 diffed the two, and when the .nix
+   disappeared it printed "skipped" WITHOUT failing -- so edit this file knowing
+   nothing cross-checks its CONTENT any more.  What is still checked is its
+   internal consistency: <name>_length[] must stay index-parallel with
+   <name>_list[], which is where a hand edit actually goes wrong.
+
+   Semantics are in libfakechroot.c:match_prefix_list -- a prefix matches only
+   when followed by '/' or end-of-string, and the include list overrides the
+   exclude list.
 
    That boundary rule is also what makes translation IDEMPOTENT: the real base
    /data/data/com.termux.nix/... matches exclude "/data" but NOT include

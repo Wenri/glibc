@@ -3,7 +3,7 @@
 #
 #   gen-shim.sh <name> <strong|plain> <assert|noassert> [none|<globl|weak>:<sym>]
 #
-# 106 of the port's 111 shims carry no information beyond their own name plus
+# 112 of the port's 117 shims carry no information beyond their own name plus
 # three table lookups -- binding, assert, asm -- so they are generated into
 # $(objpfx) rather than tracked.  The other 5 have content no table can express:
 # a compat_symbol, a real adaptation, or no vendor body to include at all.

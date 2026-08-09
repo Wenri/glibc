@@ -17,7 +17,12 @@ WRAPPERS=("$@")
 # covered the day it is named.
 MK=$SRCDIR/../Makefile
 if [ ${#WRAPPERS[@]} -eq 0 ]; then
-  mapfile -t WRAPPERS < <(sed -n '/^android-wrappers-[a-z]* *:=/,/[^\\]$/p' "$MK" |
+  # [a-z-]*, not [a-z]*: the subdir can contain a hyphen.  With [a-z]* the
+  # android-wrappers-stdio-common table never matched, so check 3 silently
+  # skipped six wrappers -- rename, renameat, renameat2, tempnam, tmpnam,
+  # remove -- for its whole existence, and check 7 counted 106/111 where the
+  # tables say 112/117.  Both reported ok while covering less than they claimed.
+  mapfile -t WRAPPERS < <(sed -n '/^android-wrappers-[a-z-]* *:=/,/[^\\]$/p' "$MK" |
                             sed 's/#.*//; s/^android-wrappers-[a-z-]* *:= *//' |
                             tr -s ' \\\n' '\n' | grep -vE '^$' | sort -u)
   [ ${#WRAPPERS[@]} -lt 100 ] && {
@@ -239,7 +244,7 @@ VENDOR=${FC_VENDOR_SRC:-$SRCDIR/../../../../../../fakechroot/src}
 if [ -d "$VENDOR" ]; then
   # Keep in step with nix-on-droid/docs/ANDROID-GLIBC.md "The adapted files".  wrapper.h is compared
   # against upstream's libfakechroot.h, its name before the rename.
-  adapted_set=" __lxstat64.c __readlink_chk.c __readlinkat_chk.c bind.c chroot.c clearenv.c connect.c execve.c glob.c libfakechroot.c lstat.c lstat64.c mkdtemp.c mkostemp.c mkostemp64.c mkostemps.c mkostemps64.c mkstemp.c mkstemp64.c mkstemps.c mkstemps64.c mktemp.c readlink.c readlinkat.c realpath.c rel2abs.c rel2absat.c tmpnam.c wrapper.h "
+  adapted_set=" __lxstat64.c __readlink_chk.c __readlinkat_chk.c bind.c canonicalize_file_name.c chroot.c clearenv.c connect.c execve.c futimesat.c glob.c libfakechroot.c lstat.c lstat64.c mkdtemp.c mkostemp.c mkostemp64.c mkostemps.c mkostemps64.c mkstemp.c mkstemp64.c mkstemps.c mkstemps64.c mktemp.c readlink.c readlinkat.c realpath.c rel2abs.c rel2absat.c tmpnam.c wrapper.h "
   n_adapted=0; n_renameonly=0; n_bad=0
   for f in "$SRCDIR"/*.c "$SRCDIR"/*.h; do
     b=$(basename "$f")
@@ -292,52 +297,82 @@ else
   fail=1
 fi
 
-echo "== 6. path-tables.h must match its source of truth =="
+echo "== 6. path-tables.h internal consistency, and the unwired manifest =="
 # path-tables.h is the whole translation POLICY -- which prefixes are local and
-# which get rewritten -- pre-expanded because glibc cannot take the Boost.PP
-# dependency fakechroot's own build uses.  Its header says "SOURCE OF TRUTH:
-# common/pkgs/android-fakechroot.nix", and nothing checked that.  Drift here does
-# not fail a build or move a symbol: it silently changes which paths are
-# translated, which is the most consequential thing in the port and the least
-# visible.  Order matters as well as membership -- the arrays are index-parallel
-# with exclude_length/include_length.
-NIXSRC=${FC_PATHS_NIX:-$SRCDIR/../../../../../../../common/pkgs/android-fakechroot.nix}
-if [ -r "$NIXSRC" ]; then
-  # From the .nix: colon-separated strings.  From the header: the quoted entries
-  # between `<name>_list[] = {' and the closing brace.
-  nixlist() { sed -n "s/.*$1 *= *\"\([^\"]*\)\".*/\1/p" "$NIXSRC" | head -1 | tr ':' '\n' | grep -vE '^$'; }
-  hdrlist() { awk -v n="$1" '$0 ~ n"_list\\[\\] *= *\\{" {f=1; next} f && /^\};/ {exit}
-                             f {while (match ($0, /"[^"]+"/))
-                                  { print substr ($0, RSTART+1, RLENGTH-2)
-                                    $0 = substr ($0, RSTART+RLENGTH) } }' "$SRCDIR/path-tables.h"; }
-  pt_fail=0
-  for pair in "excludePath|exclude" "includePath|include"; do
-    IFS='|' read -r nixname hdrname <<<"$pair"
-    a=$(nixlist "$nixname"); b=$(hdrlist "$hdrname")
-    if [ "$a" = "$b" ]; then
-      note "  ${hdrname}_list vs $nixname" "$(printf '%s\n' "$a" | grep -c .) entries  ok"
-    else
-      note "  ${hdrname}_list vs $nixname" "DRIFT"
-      diff <(printf '%s\n' "$a") <(printf '%s\n' "$b") |
-        sed 's/^</    only in android-fakechroot.nix: /; s/^>/    only in path-tables.h:          /' |
-        grep -E 'only in'
-      pt_fail=1
-    fi
-  done
-  [ $pt_fail -eq 0 ] || fail=1
+# which get rewritten.  Drift here does not fail a build or move a symbol: it
+# silently changes which paths are translated, which is the most consequential
+# thing in the port and the least visible.
+#
+# This check USED to diff the header against common/pkgs/android-fakechroot.nix,
+# which the header still named as SOURCE OF TRUTH.  That file was deleted with
+# the fakechroot package, and the check then printed "skipped" WITHOUT setting
+# fail -- so it reported ALL CHECKS PASSED while guarding nothing.  With the
+# second copy gone there is no cross-file drift left to detect: the header IS
+# the source of truth now.  What remains checkable is its internal consistency,
+# which is where a hand edit actually goes wrong.
+#
+# <name>_length[] is index-parallel with <name>_list[] and each entry restates
+# its own string as sizeof("...") - 1.  Add an entry to one array and not the
+# other, or in a different order, and match_prefix_list reads a length that
+# belongs to a different prefix.  Nothing else would notice.
+ptlist() { awk -v n="$1" -v k="$2" \
+             '$0 ~ "^static const (char \\* const|size_t) "n"_"k"\\[\\] *= *\\{" {f=1; next}
+              f && /^\};/ {exit}
+              f {while (match ($0, /"[^"]*"/))
+                   { print substr ($0, RSTART+1, RLENGTH-2)
+                     $0 = substr ($0, RSTART+RLENGTH) } }' "$SRCDIR/path-tables.h"; }
+pt_fail=0
+for t in exclude include; do
+  a=$(ptlist "$t" list); b=$(ptlist "$t" length)
+  n_a=$(printf '%s\n' "$a" | grep -c .)
+  if [ "$a" = "$b" ] && [ "$n_a" -gt 0 ]; then
+    note "  ${t}_list vs ${t}_length" "$n_a entries, index-parallel  ok"
+  else
+    note "  ${t}_list vs ${t}_length" "MISMATCH"
+    diff <(printf '%s\n' "$a") <(printf '%s\n' "$b") |
+      sed "s/^</    only in ${t}_list:   /; s/^>/    only in ${t}_length: /" | grep -E 'only in'
+    pt_fail=1
+  fi
+done
+
+# The manifest: every .c in this directory is either named by a Makefile table
+# or listed in UNWIRED, with a reason.  Without this a vendor file that nothing
+# compiles is indistinguishable from one that does -- see UNWIRED's header for
+# why that mattered.
+MANIFEST=$SRCDIR/UNWIRED
+if [ -r "$MANIFEST" ]; then
+  # Same table parse as check 7's counts, including android-syscall-*: a file
+  # named by any table is compiled.
+  wired=$(sed -n '/^android-\(wrappers\|support\|syscall\)-[a-z-]* *:=/,/[^\\]$/p' "$MK" |
+            sed 's/#.*//; s/^android-[a-z-]* *:= *//' |
+            tr -s ' \\\n' '\n' | grep -vE '^$' | sort -u)
+  present=$(ls "$SRCDIR"/*.c 2>/dev/null | xargs -n1 basename | sed 's/\.c$//' | sort -u)
+  derived=$(comm -13 <(printf '%s\n' "$wired") <(printf '%s\n' "$present"))
+  declared=$(grep -vE '^\s*(#|$)' "$MANIFEST" | sort -u)
+  if [ "$derived" = "$declared" ]; then
+    note "  unwired .c vs UNWIRED" "$(printf '%s\n' "$derived" | grep -c .) files  ok"
+  else
+    note "  unwired .c vs UNWIRED" "MISMATCH"
+    diff <(printf '%s\n' "$derived") <(printf '%s\n' "$declared") |
+      sed 's/^</    compiled by nothing, not in UNWIRED: /; s/^>/    in UNWIRED but a table names it:    /' |
+      grep -E 'UNWIRED'
+    pt_fail=1
+  fi
 else
-  note "path-tables.h vs android-fakechroot.nix" "skipped (no $NIXSRC)"
+  note "  unwired .c vs UNWIRED" "MISSING $MANIFEST"
+  pt_fail=1
 fi
+[ $pt_fail -eq 0 ] || fail=1
 
 echo "== 7. the counts quoted in prose must match the tables =="
 # These went stale TWICE -- once when the shim set grew, and once when
 # gen-shim.sh took over the .globl/.set cases and android-shim-hand shrank from
 # 20 to 5 -- and each time the wrong numbers sat in the very files that explain
 # the machinery.  A count is a claim; check it like any other.
-cnt_wrappers=$(sed -n '/^android-wrappers-[a-z]* *:=/,/[^\\]$/p' "$MK" |
+cnt_wrappers=$(sed -n '/^android-wrappers-[a-z-]* *:=/,/[^\\]$/p' "$MK" |
                  sed 's/#.*//; s/^android-wrappers-[a-z-]* *:= *//' |
                  tr -s ' \\\n' '\n' | grep -vE '^$' | sort -u | grep -c .)
-cnt_support=$(sed -n '/^android-support-[a-z]* *:=/,/[^\\]$/p' "$MK" |
+cnt_support=$(sed -n '/^android-support-[a-z-]* *:=/,/[^\\]$/p' "$MK" |
                 sed 's/#.*//; s/^android-support-[a-z-]* *:= *//' |
                 tr -s ' \\\n' '\n' | grep -vE '^$' | sort -u | grep -c .)
 cnt_hand=$(printf '%s\n' "$hand" | grep -c .)
@@ -367,7 +402,7 @@ c7 "objects (gen-shim)"          "$cnt_objs"   "$SRCDIR/gen-shim.sh" "port's @ s
 
 DOC=${FC_DOC:-$SRCDIR/../../../../../../../docs/ANDROID-GLIBC.md}
 if [ -r "$DOC" ]; then
-  c7 "generated shims (docs)" "$cnt_gen"    "$DOC" "@ of the 111 objects"
+  c7 "generated shims (docs)" "$cnt_gen"    "$DOC" "@ of the $cnt_objs objects"
   c7 "vendor .c (docs)"       "$cnt_vendor" "$DOC" "module's @ libc-named files"
 else
   note "  docs/ANDROID-GLIBC.md" "skipped (no $DOC)"

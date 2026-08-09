@@ -24,7 +24,10 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include <dlfcn.h>
+/* No <dlfcn.h>: it was here for the dlsym(RTLD_NEXT) machinery this header
+   replaces (see the GLIBC GLUE block below).  Nothing in the port calls dlsym
+   or dlopen -- every remaining mention is in a comment -- and this header is
+   included by every one of the ~112 wrapper TUs, so it was pure build cost.  */
 #include <errno.h>
 #include <limits.h>
 #include <stdbool.h>

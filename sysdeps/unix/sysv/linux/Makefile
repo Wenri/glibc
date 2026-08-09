@@ -883,8 +883,11 @@ ifneq ($(boost-pp-inc),)
 android-inc += -isystem $(boost-pp-inc)
 endif
 
-# --- shims: 106 generated, 5 checked in ------------------------------------
-# 106 wrappers + 5 support objects = 111, minus the 5 in android-shim-hand.
+# --- shims: 112 generated, 5 checked in ------------------------------------
+# 112 wrappers + 5 support objects = 117, minus the 5 in android-shim-hand.
+# (Was 106/111 until verify-fc.sh's table regex was corrected: [a-z]* never
+# matched android-wrappers-stdio-common, so six wrappers were uncounted AND
+# unverified by check 3.)
 # verify-fc.sh check 5 asserts the checked-in set equals android-shim-hand and
 # check 7 asserts these numbers match the tables -- they had gone stale twice
 # before that check existed.
