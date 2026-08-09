@@ -20,10 +20,10 @@
    That boundary rule is also what makes translation IDEMPOTENT: the real
    base (ANDROID_BASE) matches exclude "/data" but never the include list, so
    an already-translated path is treated as local and left alone.  For the
-   canonical id the discriminator is the boundary rule itself --
-   /data/data/com.termux.nix fails include "/data/data/com.termux" because
-   the next char is '.', not '/'; for any other app id (say /data/data/a.x)
-   no include entry prefixes it at all, which is the same outcome for free.
+   canonical id (stock Termux's id plus a ".nix" suffix) the discriminator is
+   the boundary rule itself -- the suffix begins with '.', not '/', so the
+   stock-Termux include entry below does not match; for any other app id no
+   include entry prefixes it at all, which is the same outcome for free.
    The "/data/data/com.termux" entry below is legacy-Termux interop, keyed to
    stock Termux's app id -- it is deliberately NOT rewritten when this tree
    is built for a different nix-on-droid app id.  */
