@@ -40,8 +40,15 @@
 #define ANDROID_ORIGINAL_STORE "/nix/store"
 #define ANDROID_ORIGINAL_STORE_LEN (sizeof (ANDROID_ORIGINAL_STORE) - 1)
 
-/* The actual Nix store path on Android (nix-on-droid).  */
-#define ANDROID_REAL_STORE "/data/data/com.termux.nix/files/usr/nix/store"
+/* The actual Nix store path on Android (nix-on-droid): the installation
+   prefix plus /nix/store.  ANDROID_BASE arrives as -DANDROID_BASE from
+   android-glibc.nix (source of truth: paths.nix installationDir); this
+   header is included from rtld TUs independently of the wrappers'
+   config.h, so it guards for the flag itself.  */
+#ifndef ANDROID_BASE
+# error "android: -DANDROID_BASE missing (see common/pkgs/android-glibc.nix)"
+#endif
+#define ANDROID_REAL_STORE ANDROID_BASE "/nix/store"
 #define ANDROID_REAL_STORE_LEN (sizeof (ANDROID_REAL_STORE) - 1)
 
 /* Android glibc library path - set via CFLAGS at build time.

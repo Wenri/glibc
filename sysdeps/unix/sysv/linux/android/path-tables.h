@@ -17,10 +17,16 @@
    when followed by '/' or end-of-string, and the include list overrides the
    exclude list.
 
-   That boundary rule is also what makes translation IDEMPOTENT: the real base
-   /data/data/com.termux.nix/... matches exclude "/data" but NOT include
-   "/data/data/com.termux" (next char is '.'), so an already-translated path is
-   treated as local and left alone.  */
+   That boundary rule is also what makes translation IDEMPOTENT: the real
+   base (ANDROID_BASE) matches exclude "/data" but never the include list, so
+   an already-translated path is treated as local and left alone.  For the
+   canonical id the discriminator is the boundary rule itself --
+   /data/data/com.termux.nix fails include "/data/data/com.termux" because
+   the next char is '.', not '/'; for any other app id (say /data/data/a.x)
+   no include entry prefixes it at all, which is the same outcome for free.
+   The "/data/data/com.termux" entry below is legacy-Termux interop, keyed to
+   stock Termux's app id -- it is deliberately NOT rewritten when this tree
+   is built for a different nix-on-droid app id.  */
 
 #ifndef _FAKECHROOT_PATH_TABLES_H
 #define _FAKECHROOT_PATH_TABLES_H

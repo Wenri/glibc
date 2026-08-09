@@ -18,8 +18,17 @@
 #define PACKAGE "android-glibc"
 
 /* The chroot base: nix-on-droid's installation prefix.
-   SOURCE OF TRUTH: common/modules/android/paths.nix installationDir.  */
-#define ANDROID_BASE "/data/data/com.termux.nix/files/usr"
+   SOURCE OF TRUTH: common/modules/android/paths.nix installationDir, which
+   android-glibc.nix feeds in as -DANDROID_BASE on NIX_CFLAGS_COMPILE for
+   every TU -- same DERIVED-not-pasted arrangement as ANDROID_GLIBC_LIB
+   below, and for the same reason: a pasted literal here silently skews from
+   the app id the rest of the stack was built for.  The scattered prefix
+   literals elsewhere in this tree (resolv/, nss/, paths.h, ...) stay
+   canonical com.termux.nix and are rewritten by android-glibc.nix's
+   postPatch sed when building for another app id.  */
+#ifndef ANDROID_BASE
+# error "android: -DANDROID_BASE missing (see common/pkgs/android-glibc.nix)"
+#endif
 
 /* execve.c needs both of these; fakechroot's configure supplied them and
    nothing in this tree did, so execve.c did not compile at all until now.

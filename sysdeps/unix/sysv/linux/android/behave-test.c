@@ -57,7 +57,12 @@
 #include <sys/statfs.h>
 #include <sys/statvfs.h>
 #include <sys/syscall.h>
-#define BASE "/data/data/com.termux.nix/files/usr"
+/* Standalone test: takes -DANDROID_BASE from the build command line like
+   the library proper (and exec-test.c) -- see config.h.  */
+#ifndef ANDROID_BASE
+# error "behave-test: compile with -DANDROID_BASE=\"<prefix>\""
+#endif
+#define BASE ANDROID_BASE
 /* Dynamically linked?  _DYNAMIC is defined by the link editor only when there
    is a PT_DYNAMIC, so a weak reference to it is the standard discriminator --
    and it needs no build flag, so a -static run cannot forget to pass one. */

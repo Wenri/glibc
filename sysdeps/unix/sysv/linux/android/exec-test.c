@@ -59,9 +59,14 @@
 
 extern char **environ;
 
-/* Same literal as android/config.h ANDROID_BASE and behave-test.c
-   BASE.  The test compiles standalone, so it cannot include config.h.  */
-#define BASE      "/data/data/com.termux.nix/files/usr"
+/* The prefix under test.  The test compiles standalone (it cannot include
+   config.h), so it takes -DANDROID_BASE from the build command line exactly
+   like the library proper -- keeping it in lockstep with behave-test.c and
+   the wrappers for whatever app id this tree is built for.  */
+#ifndef ANDROID_BASE
+# error "exec-test: compile with -DANDROID_BASE=\"<prefix>\""
+#endif
+#define BASE      ANDROID_BASE
 #define MARK      "FC_EXEC_MARK"
 #define CHILD_OK  42          /* what a successfully exec'd child exits with */
 
