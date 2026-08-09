@@ -54,7 +54,7 @@ wrapper(bind, int, (int sockfd, BIND_TYPE_ARG2(addr), socklen_t addrlen))
         socklen_t newaddrlen;
         struct sockaddr_un newaddr_un;
 
-        const char *af_unix_path = getenv("FAKECHROOT_AF_UNIX_PATH");
+        const char *af_unix_path = getenv("ANDROID_AF_UNIX_PATH");
         const int af_unix_path_max = sizeof(addr_un->sun_path);
         const char *path = addr_un->sun_path;
 

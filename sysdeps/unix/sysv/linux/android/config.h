@@ -11,9 +11,11 @@
 /* Selects the pre-expanded tables in libfakechroot.c instead of Boost.PP.  */
 #define ANDROID_PATH_TABLES 1
 
-/* autoconf's AC_INIT package name; used only as the debug()/FAKECHROOT_DEBUG
-   message prefix (libfakechroot.c fakechroot_debug).  */
-#define PACKAGE "libfakechroot"
+/* autoconf's AC_INIT package name; used only as the debug()/ANDROID_DEBUG
+   message prefix (libfakechroot.c fakechroot_debug).  Renamed off
+   "libfakechroot" with the library itself: there is no such object any more,
+   and a trace line naming one sends readers looking for a preload.  */
+#define PACKAGE "android-glibc"
 
 /* The chroot base: nix-on-droid's installation prefix.
    SOURCE OF TRUTH: common/modules/android/paths.nix installationDir.  */

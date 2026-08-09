@@ -31,9 +31,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <pwd.h>
-#include <dlfcn.h>
-#include "setenv.h"
+/* pwd.h, dlfcn.h and setenv.h were vendor-inherited and unused here: no
+   getpw*, no dlsym, no setenv in this file.  */
 #include "wrapper.h"
 #include "getcwd_real.h"
 
@@ -83,13 +82,19 @@ static const size_t include_max = BOOST_PP_SEQ_SIZE(INCLUDE_PATH_SEQ);
 #endif
 
 
-/* List of environment variables to preserve on clearenv() */
+/* List of environment variables to preserve on clearenv().
+
+   ADAPTED FOR GLIBC -- not upstream fakechroot.  Upstream also preserved
+   FAKEROOTKEY and FAKED_MODE (fakeroot, which nix-on-droid does not run) and
+   LD_PRELOAD (this port IS the interposition now, so refusing to clear
+   LD_PRELOAD is residue rather than a feature).  All three had zero readers in
+   either tree; dropped.
+
+   ANDROID_DEBUG is COUPLED to the getenv in fakechroot_debug below -- renaming
+   one without the other silently changes which name survives clearenv().  */
 const char * const preserve_env_list[] = {
-    "FAKECHROOT_DEBUG",
-    "FAKEROOTKEY",
-    "FAKED_MODE",
-    "LD_LIBRARY_PATH",
-    "LD_PRELOAD"
+    "ANDROID_DEBUG",
+    "LD_LIBRARY_PATH"
 };
 const size_t preserve_env_list_count = sizeof preserve_env_list / sizeof preserve_env_list[0];
 
@@ -100,10 +105,11 @@ LOCAL int fakechroot_debug (const char *fmt, ...)
     char newfmt[2048];
     va_list ap;
 
-    /* Check FAKECHROOT_DEBUG BEFORE va_start to avoid undefined behavior.
+    /* Check ANDROID_DEBUG BEFORE va_start to avoid undefined behavior.
      * Calling va_start without va_end is undefined behavior that can
-     * corrupt the stack/heap on some architectures. */
-    if (!getenv("FAKECHROOT_DEBUG"))
+     * corrupt the stack/heap on some architectures.
+     * Coupled to the preserve_env_list entry above. */
+    if (!getenv("ANDROID_DEBUG"))
         return 0;
 
     va_start(ap, fmt);
@@ -117,7 +123,8 @@ LOCAL int fakechroot_debug (const char *fmt, ...)
 }
 
 
-#include "getcwd.h"
+/* getcwd.h was here and unused -- this file calls getcwd_real (declared by
+   getcwd_real.h above), never getcwd.  */
 
 
 /* Check if path matches any prefix in the given list */

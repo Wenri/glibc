@@ -25,14 +25,15 @@
 
 /* Adaptation 1: make execve honour envp exactly, as POSIX says.
 
-   exec_preserve_env (execve.c:218-278) injects up to five variables from the
-   CALLING process's environment into the child whenever envp lacks them:
-   FAKECHROOT_DEBUG, FAKEROOTKEY, FAKED_MODE, LD_LIBRARY_PATH and LD_PRELOAD
-   (libfakechroot.c:85-92).  Under LD_PRELOAD that was load-bearing -- it is how
-   libfakechroot survived an exec.  Compiled into libc it is unnecessary, since
-   the child's own libc carries the translation layer, and it silently defeats
-   `env -i', sudo-style environment scrubbing and nix build isolation by handing
-   LD_LIBRARY_PATH and LD_PRELOAD back to a child that was denied them.
+   exec_preserve_env (execve.c:218-278) injects the preserve_env_list variables
+   from the CALLING process's environment into the child whenever envp lacks
+   them -- ANDROID_DEBUG and LD_LIBRARY_PATH (libfakechroot.c:87-96), and
+   upstream additionally FAKEROOTKEY, FAKED_MODE and LD_PRELOAD.  Under
+   LD_PRELOAD that was load-bearing -- it is how libfakechroot survived an exec.
+   Compiled into libc it is unnecessary, since the child's own libc carries the
+   translation layer, and it silently defeats `env -i', sudo-style environment
+   scrubbing and nix build isolation by handing LD_LIBRARY_PATH back to a child
+   that was denied it.
 
    Zeroing the count collapses exec_preserve_env to "copy envp's pointers and
    NUL-terminate", which is exactly right: the running total only accumulates

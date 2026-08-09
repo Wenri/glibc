@@ -330,19 +330,19 @@ main (int argc, char **argv)
     /* With debugging on, fakechroot_debug's 2,400-byte frame nests inside
        rel2abs at the deepest point of that same chain.  */
     ++probes;
-    setenv ("FAKECHROOT_DEBUG", "1", 1);
+    setenv ("ANDROID_DEBUG", "1", 1);
     rc = posix_spawn (&p, self, NULL, NULL, sv, big);
-    unsetenv ("FAKECHROOT_DEBUG");
+    unsetenv ("ANDROID_DEBUG");
     if (rc != 0)
-      { printf ("  %-44s FAIL (%s)\n", "posix_spawn under FAKECHROOT_DEBUG",
+      { printf ("  %-44s FAIL (%s)\n", "posix_spawn under ANDROID_DEBUG",
 		strerror (rc)); ++failures; }
     else
       {
 	waitpid (p, &st, 0);
 	if (WIFSIGNALED (st) || WEXITSTATUS (st) != CHILD_OK)
-	  { printf ("  %-44s FAIL\n", "posix_spawn under FAKECHROOT_DEBUG");
+	  { printf ("  %-44s FAIL\n", "posix_spawn under ANDROID_DEBUG");
 	    ++failures; }
-	else printf ("  %-44s ok\n", "posix_spawn under FAKECHROOT_DEBUG");
+	else printf ("  %-44s ok\n", "posix_spawn under ANDROID_DEBUG");
       }
   }
 
