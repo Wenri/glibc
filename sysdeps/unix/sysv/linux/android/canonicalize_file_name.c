@@ -32,12 +32,25 @@
 
 wrapper(canonicalize_file_name, char *, (const char * name))
 {
-    char *resolved = malloc(FAKECHROOT_PATH_MAX * 2);
     debug("canonicalize_file_name(\"%s\")", name);
+    /* ADAPTED FOR GLIBC -- not upstream fakechroot.  Upstream malloc'd an 8 KiB
+       buffer here, passed it down, and returned the callee's result -- so every
+       failure (ENOENT being much the most common: probing PATH entries, -I
+       dirs, candidate configs) leaked the whole 8 KiB, and the malloc was
+       unchecked besides.
+
+       Passing NULL instead is what stock glibc's canonicalize_file_name does
+       (__realpath (name, NULL)), and realpath.c:109-117 already handles it:
+       it allocates path_max itself, and its error path frees that buffer
+       precisely when RESOLVED was NULL (realpath.c:269-270).  So this removes
+       the leak rather than moving it, drops the unchecked malloc, and halves
+       the allocation.  The size argument stays >= PATH_MAX to keep
+       __realpath_chk from taking __chk_fail; with a NULL buffer it has nothing
+       to fortify.  */
 #ifdef HAVE___REALPATH_CHK
-    return __realpath_chk(name, resolved, FAKECHROOT_PATH_MAX * 2);
+    return __realpath_chk(name, NULL, FAKECHROOT_PATH_MAX * 2);
 #else
-    return realpath(name, resolved);
+    return realpath(name, NULL);
 #endif
 }
 

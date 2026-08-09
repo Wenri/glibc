@@ -31,7 +31,13 @@ wrapper(futimesat, int, (int fd, const char * filename, const struct timeval tv 
 {
     char fakechroot_buf[FAKECHROOT_PATH_MAX];
     debug("futimesat(%d, \"%s\", &tv)", fd, filename);
-    filename = expand_chroot_path(filename, fakechroot_buf);
+    /* ADAPTED FOR GLIBC -- not upstream fakechroot.  Upstream calls
+       expand_chroot_path here, which resolves a relative FILENAME against the
+       CWD instead of FD.  The result is absolute, so the kernel then ignores FD
+       entirely: futimesat(fd, "data", tv) with fd = /a and cwd = /b rewrites
+       /b/data's timestamps, or fails ENOENT with no hint that FD was dropped.
+       This was the only live *at wrapper not using the _at form.  */
+    filename = expand_chroot_path_at(fd, filename, fakechroot_buf);
     return nextcall(futimesat)(fd, filename, tv);
 }
 

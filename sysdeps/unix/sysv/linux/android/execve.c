@@ -27,11 +27,10 @@
 #include <fcntl.h>
 #include <string.h>
 #include <elf.h>
-#include "strchrnul.h"
+/* strchrnul.h, setenv.h and readlink.h were vendor-inherited and unused here:
+   this file calls none of the three.  */
 #include "wrapper.h"
 #include "open.h"
-#include "setenv.h"
-#include "readlink.h"
 #include "execve.h"
 
 
@@ -463,6 +462,24 @@ static void exec_build_script_argv(exec_ctx_t *ctx, char **newargv, char * const
 
     /* Parse shebang line and expand interpreter path into ctx->interpPath */
     char *const displayArgv0 = parse_shebang(ctx, &shebangArg);
+
+    /* ADAPTED FOR GLIBC -- not upstream fakechroot.  parse_shebang returns NULL
+       on two paths: a shebang with no interpreter token ("#!" then only
+       whitespace), and an interpreter too long to translate.  Upstream stores
+       the result straight into newargv, so NULL landed in argv[0] -- the kernel
+       copies arguments only up to the first NULL, so ld.so was then entered
+       with argc == 0 and complained about something unrelated to the actual
+       cause.
+
+       Fail the way exec_prepare already fails a bad expansion: leave an empty
+       path so the exec returns ENOENT, with a well-formed (empty) argv.  */
+    if (displayArgv0 == NULL) {
+        debug("exec: unusable shebang interpreter, failing exec");
+        ctx->interpPath[0] = '\0';
+        ctx->type = EXEC_TYPE_DIRECT_SCRIPT;   /* exec_get_path -> interpPath */
+        newargv[0] = NULL;
+        return;
+    }
 
     /*
      * Check if interpreter can be executed directly (has direct-exec PT_INTERP).

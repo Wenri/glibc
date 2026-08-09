@@ -42,12 +42,12 @@
 #undef __glob64
 
 #include "wrapper.h"
+#include "glob-narrow.h"
 
 
 wrapper(glob, int, (const char * pattern, int flags, int (* errfunc) (const char *, int), glob_t * pglob))
 {
     char fakechroot_buf[FAKECHROOT_PATH_MAX];
-    size_t i, base;
     int rc;
 
     debug("glob(\"%s\", %d, &errfunc, &pglob)", pattern, flags);
@@ -65,27 +65,12 @@ wrapper(glob, int, (const char * pattern, int flags, int (* errfunc) (const char
     if (rc != 0)
         return rc;
 
-    /* ADAPTED FOR GLIBC -- not upstream fakechroot.  Under GLOB_DOOFFS the
-       caller reserves gl_offs leading slots, which glibc fills with NULL
-       (posix/glob.c:350) and stores the matches ABOVE (:486, oldcount =
-       gl_pathc + gl_offs).  Upstream indexes from 0 and so strcpy'd from a NULL
-       pointer.  When the flag is absent glibc forces gl_offs to 0 (:331), so
-       the offset is a no-op there.
-
-       Stripping a prefix only shortens the string, so this rewrites in place:
-       that drops a 4KB stack temp and an unbounded strcpy of a
-       filesystem-supplied path, and replaces a whole-string strstr() with the
-       prefix test it was always meant to be.  */
-    base = (flags & GLOB_DOOFFS) ? pglob->gl_offs : 0;
-
-    /* Strip ANDROID_BASE prefix from results */
-    for (i = 0; i < pglob->gl_pathc; i++) {
-        char *const p = pglob->gl_pathv[base + i];
-
-        if (strncmp(p, ANDROID_BASE, ANDROID_BASE_LEN) == 0)
-            memmove(p, p + ANDROID_BASE_LEN,
-                    strlen(p) - ANDROID_BASE_LEN + 1);
-    }
+    /* ADAPTED FOR GLIBC -- not upstream fakechroot.  Upstream copied every
+       match through a stack temp with strcpy, indexed from 0 under
+       GLOB_DOOFFS, and open-coded the prefix strip.  All three defects, and
+       the fix, are now in glob-narrow.h -- shared with the compat arm, which
+       is where they survived after this file was fixed.  */
+    fc_glob_narrow_results(pglob, flags);
     return rc;
 }
 

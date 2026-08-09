@@ -17,6 +17,7 @@
  */
 #define _GNU_SOURCE
 #include <dirent.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -158,6 +159,67 @@ static int t_glob_dooffs (void)
   memset (&n, 0, sizeof n);
   rc = glob ("/nonexistent-aXbYcZ/*", 0, NULL, &n);
   if (rc == 0) globfree (&n);
+  return 1;
+}
+
+/* The SAME defects, on the COMPAT arm -- glob@GLIBC_2.17.
+ *
+ * This probe exists because the modern arm above cannot reach it: the two are
+ * different implementations at different addresses, selected by symbol
+ * version, so a binary linked against pre-2.27 headers gets the other one.
+ * android/glob.c was fixed and fc-glob_lstat_compat.c was not, for as long as
+ * its header comment claimed the bodies "mirror exactly" -- nobody re-read the
+ * copy that was asserted to be identical.  Both now share
+ * android/glob-narrow.h, and this is what keeps that true.
+ *
+ * The fourth defect, an unbounded strcpy of a match into a
+ * FAKECHROOT_PATH_MAX stack buffer, is NOT probed here: reaching it needs a
+ * match path longer than PATH_MAX, i.e. a directory tree thousands of levels
+ * deep.  It is instead eliminated structurally -- the shared helper narrows in
+ * place via narrow_chroot_path and copies nothing, so there is no buffer left
+ * to overflow.
+ */
+static int t_glob_compat (void)
+{
+  int (*g17) (const char *, int, int (*) (const char *, int), glob_t *)
+    = dlvsym (RTLD_DEFAULT, "glob", "GLIBC_2.17");
+  if (g17 == NULL)
+    return 1;              /* no compat arm in this build; nothing to test */
+
+  /* GLOB_DOOFFS: glibc NULLs the reserved slots and stores matches above them.
+     Indexing from 0 read a NULL and copied from it.  */
+  glob_t g;
+  memset (&g, 0, sizeof g);
+  g.gl_offs = 2;
+  int rc = g17 ("/*", GLOB_DOOFFS, NULL, &g);
+  if (rc == 0)
+    {
+      if (g.gl_pathv[0] != NULL || g.gl_pathv[1] != NULL) return 0;
+      for (size_t i = 0; i < g.gl_pathc; i++)
+	if (g.gl_pathv[g.gl_offs + i] == NULL) return 0;
+      globfree (&g);
+    }
+
+  /* Errors are POSITIVE.  `rc < 0' never fired, so a failed glob fell through
+     and walked a gl_pathv that was never filled.  */
+  glob_t n;
+  memset (&n, 0, sizeof n);
+  rc = g17 ("/nonexistent-aXbYcZ/*", 0, NULL, &n);
+  if (rc == 0) globfree (&n);
+
+  /* Over-long pattern: expand_chroot_rel_path returns NULL now, and glibc's
+     glob dereferences the pattern immediately.  */
+  char big[5000];
+  memset (big, 'a', sizeof big);
+  big[0] = '/';
+  big[sizeof big - 3] = '/';
+  big[sizeof big - 2] = '*';
+  big[sizeof big - 1] = '\0';
+  glob_t l;
+  memset (&l, 0, sizeof l);
+  rc = g17 (big, 0, NULL, &l);
+  if (rc == 0) globfree (&l);
+
   return 1;
 }
 
@@ -355,6 +417,7 @@ int main (int argc, char **argv)
   probe ("expand_chroot_rel_path 35-byte overrun", t_longpath);
   probe ("rel2absat leaves CWD moved",             t_at_cwd);
   probe ("glob GLOB_DOOFFS / positive rc",         t_glob_dooffs);
+  probe ("glob@GLIBC_2.17 compat arm",             t_glob_compat);
   probe ("raw syscall(SYS_rt_sigaction) OOB write", t_raw_rt_sigaction);
   probe ("lstat reads st_mode before retval",      t_lstat_poisoned);
   probe ("posix_spawn addopen untranslated",       t_spawn_addopen);
