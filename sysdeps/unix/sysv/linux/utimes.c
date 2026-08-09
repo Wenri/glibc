@@ -19,6 +19,10 @@
 #include <time.h>
 #include <fcntl.h>
 
+#if !IS_IN (rtld)
+# define __utimes __android_next_utimes
+#endif
+
 int
 __utimes64 (const char *file, const struct __timeval64 tvp[2])
 {
@@ -50,4 +54,6 @@ __utimes (const char *file, const struct timeval tvp[2])
   return __utimes64 (file, tvp ? tv64 : NULL);
 }
 #endif
+#if IS_IN (rtld)
 weak_alias (__utimes, utimes)
+#endif

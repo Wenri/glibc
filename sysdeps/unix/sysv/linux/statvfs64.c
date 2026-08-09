@@ -25,6 +25,10 @@
 #include <kernel_stat.h>
 
 /* Return information about the filesystem on which FILE resides.  */
+#if !IS_IN (rtld)
+# define __statvfs64 __android_next_statvfs64
+#endif
+
 int
 __statvfs64 (const char *file, struct statvfs64 *buf)
 {
@@ -37,12 +41,18 @@ __statvfs64 (const char *file, struct statvfs64 *buf)
 
   return 0;
 }
+#if IS_IN (rtld)
 weak_alias (__statvfs64, statvfs64)
+#endif
 
 #undef __statvfs
 #undef statvfs
 
 #if STATFS_IS_STATFS64
+#if IS_IN (rtld)
 weak_alias (__statvfs64, __statvfs)
+#endif
+#if IS_IN (rtld)
 weak_alias (__statvfs64, statvfs)
+#endif
 #endif

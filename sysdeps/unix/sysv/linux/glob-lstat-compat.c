@@ -25,7 +25,24 @@
 #include <glob.h>
 #undef glob64
 
-#define __glob __glob_lstat_compat
+/* android: the compat arm keeps its OWN semantics -- GLOB_LSTAT is
+   gl_stat below, not gl_lstat -- and gets its own wrapper, so that binaries
+   bound to glob@GLIBC_2.17 are translated too rather than silently reaching
+   untranslated code.  Rename the implementation; the shim supplies the
+   wrapper and the compat_symbols.
+
+   The #else arm is glibc's own name for this body, and is what an rtld build
+   would take.  Nothing compiles this file into ld.so -- all-rtld-routines is
+   dl-* only -- so it is unreachable today.  It is kept because it is the right
+   answer if that ever changes, and because dropping it would leave a bare
+   #define that reads as unconditional.  Note the condition used to mean "is the
+   wrapper wired" and now means "am I rtld"; the two agree here only because
+   this file is always compiled for libc.  */
+#if !IS_IN (rtld)
+# define __glob __android_next_glob_lstat_compat
+#else
+# define __glob __glob_lstat_compat
+#endif
 
 #define GLOB_ATTRIBUTE attribute_compat_text_section
 
@@ -43,9 +60,15 @@
 #endif
 
 #if SHLIB_COMPAT(libc, GLOB_LSTAT_VERSION, GLIBC_2_27)
+# if IS_IN (rtld)
 compat_symbol (libc, __glob_lstat_compat, glob, GLOB_LSTAT_VERSION);
+# endif
 # if XSTAT_IS_XSTAT64
+# if IS_IN (rtld)
 strong_alias (__glob_lstat_compat, __glob64_lstat_compat)
+# endif
+# if IS_IN (rtld)
 compat_symbol (libc, __glob64_lstat_compat, glob64, GLOB_LSTAT_VERSION);
+# endif
 # endif
 #endif

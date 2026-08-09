@@ -39,12 +39,29 @@ __libc_openat64 (int fd, const char *file, int oflag, ...)
   return SYSCALL_CANCEL (openat, fd, file, oflag | O_LARGEFILE, mode);
 }
 
+/* android: the wrappers take over openat, openat64, __openat
+   and __openat64.  Nothing is renamed --
+   __libc_openat64 stays as the untranslated implementation that nextcall()
+   reaches (see android/nextcall-overrides.h), so only the
+   aliases the wrappers claim are suppressed.  */
+#if IS_IN (rtld)
 strong_alias (__libc_openat64, __openat64)
+#endif
+#if IS_IN (rtld)
 libc_hidden_weak (__openat64)
+#endif
+#if IS_IN (rtld)
 weak_alias (__libc_openat64, openat64)
+#endif
 
 #ifdef __OFF_T_MATCHES_OFF64_T
+#if IS_IN (rtld)
 strong_alias (__libc_openat64, __openat)
+#endif
+#if IS_IN (rtld)
 libc_hidden_weak (__openat)
+#endif
+#if IS_IN (rtld)
 weak_alias (__libc_openat64, openat)
+#endif
 #endif

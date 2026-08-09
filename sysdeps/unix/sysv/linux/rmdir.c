@@ -20,6 +20,12 @@
 #include <fcntl.h>
 #include <sysdep.h>
 
+/* android: the wrapper (fc-rmdir.c) takes over both `rmdir' and
+   `__rmdir'; this implementation becomes the raw "next" it calls through to.  */
+#if !IS_IN (rtld)
+# define __rmdir __android_next_rmdir
+#endif
+
 /* Remove the directory PATH.  */
 int
 __rmdir (const char *path)
@@ -30,4 +36,6 @@ __rmdir (const char *path)
   return INLINE_SYSCALL_CALL (unlinkat, AT_FDCWD, path, AT_REMOVEDIR);
 #endif
 }
+#if IS_IN (rtld)
 weak_alias (__rmdir, rmdir)
+#endif

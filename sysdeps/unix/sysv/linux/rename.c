@@ -22,6 +22,16 @@
 #include <errno.h>
 
 /* Rename the file OLD to NEW.  */
+#if !IS_IN (rtld)
+# define rename __android_next_rename
+/* Precondition 9.  The #ifdef __NR_rename arm below issues
+   INLINE_SYSCALL_CALL (rename, ...), which pastes the renamed token into
+   __NR_##name.  aarch64 has no __NR_rename so that arm is dead here and the
+   build passes by luck; keep this so the rename stays correct on an arch
+   that does have it.  */
+# define __NR___android_next_rename __NR_rename
+#endif
+
 int
 rename (const char *old, const char *new)
 {

@@ -19,6 +19,10 @@
 
 
 /* Execute PATH with arguments ARGV and environment from `environ'.  */
+#if !IS_IN (rtld)
+# define execv __android_next_execv
+#endif
+
 int
 execv (const char *path, char *const argv[])
 {

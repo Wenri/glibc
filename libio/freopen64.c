@@ -32,6 +32,10 @@
 #include <libioP.h>
 #include <fd_to_filename.h>
 
+#if !IS_IN (rtld)
+# define freopen64 __android_next_freopen64
+#endif
+
 FILE *
 freopen64 (const char *filename, const char *mode, FILE *fp)
 {

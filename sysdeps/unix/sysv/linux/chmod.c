@@ -19,6 +19,12 @@
 #include <fcntl.h>
 #include <sysdep.h>
 
+/* android: the wrapper (fc-chmod.c) takes over both `chmod' and
+   `__chmod'; this implementation becomes the raw "next" it calls through to.  */
+#if !IS_IN (rtld)
+# define __chmod __android_next_chmod
+#endif
+
 /* Change the protections of FILE to MODE.  */
 int
 __chmod (const char *file, mode_t mode)
@@ -30,5 +36,9 @@ __chmod (const char *file, mode_t mode)
 #endif
 }
 
+#if IS_IN (rtld)
 libc_hidden_def (__chmod)
+#endif
+#if IS_IN (rtld)
 weak_alias (__chmod, chmod)
+#endif

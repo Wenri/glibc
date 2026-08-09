@@ -22,6 +22,24 @@
 
 #include "spawn_int.h"
 
+#ifdef ANDROID_SPAWN_FACTION_TRANSLATE
+/* ANDROID: the registered PATH is opened by __spawni_child with
+   __open_nocancel (sysdeps/unix/sysv/linux/spawni.c:214), which no wrapper
+   covers -- so without this the child opens an UNTRANSLATED path, fails, and
+   exits 127 with no diagnostic anywhere.  Wiring the vendor's posix_spawn.c
+   would not help: it passes file_actions through untouched.
+
+   Translating at REGISTRATION rather than in the child is deliberate.  This
+   runs in ordinary context, so it costs the CLONE_VM|CLONE_VFORK child none of
+   the stack spawni.c has to size by hand, and raises no question about what is
+   safe to call while the parent's address space is shared.
+
+   The sibling chdir action needs nothing: spawni.c:257 calls __chdir, which IS
+   a wrapper (Makefile:781), so that path is already translated.  */
+# include <config.h>
+# include "wrapper.h"
+#endif
+
 /* Add an action to FILE-ACTIONS which tells the implementation to call
    `open' for the given file during the `spawn' call.  */
 int
@@ -34,7 +52,16 @@ __posix_spawn_file_actions_addopen (posix_spawn_file_actions_t *file_actions,
   if (!__spawn_valid_fd (fd))
     return EBADF;
 
+#ifdef ANDROID_SPAWN_FACTION_TRANSLATE
+  char fakechroot_buf[FAKECHROOT_PATH_MAX];
+  const char *const xpath = expand_chroot_path (path, fakechroot_buf);
+  /* This interface reports errors as a return value, not via errno.  */
+  if (xpath == NULL)
+    return ENAMETOOLONG;
+  char *path_copy = __strdup (xpath);
+#else
   char *path_copy = __strdup (path);
+#endif
   if (path_copy == NULL)
     return ENOMEM;
 

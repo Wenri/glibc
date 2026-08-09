@@ -24,6 +24,10 @@
 /* Execute FILE, searching in the `PATH' environment variable if
    it contains no slashes, with all arguments after FILE until a
    NULL pointer and environment from `environ'.  */
+#if !IS_IN (rtld)
+# define execlp __android_next_execlp
+#endif
+
 int
 execlp (const char *file, const char *arg, ...)
 {
@@ -55,4 +59,6 @@ execlp (const char *file, const char *arg, ...)
 
   return __execvpe (file, argv, __environ);
 }
+#if IS_IN (rtld)
 libc_hidden_def (execlp)
+#endif

@@ -42,15 +42,32 @@ __libc_open64 (const char *file, int oflag, ...)
 			 mode);
 }
 
+/* android: the wrappers take over open, open64, __open and
+   __open64.  Nothing is renamed --
+   __libc_open64 stays as the untranslated implementation that nextcall()
+   reaches (see android/nextcall-overrides.h), so only the
+   aliases the wrappers claim are suppressed.  */
+#if IS_IN (rtld)
 strong_alias (__libc_open64, __open64)
+#endif
+#if IS_IN (rtld)
 libc_hidden_weak (__open64)
+#endif
+#if IS_IN (rtld)
 weak_alias (__libc_open64, open64)
+#endif
 
 #ifdef __OFF_T_MATCHES_OFF64_T
 strong_alias (__libc_open64, __libc_open)
+#if IS_IN (rtld)
 strong_alias (__libc_open64, __open)
+#endif
+#if IS_IN (rtld)
 libc_hidden_weak (__open)
+#endif
+#if IS_IN (rtld)
 weak_alias (__libc_open64, open)
+#endif
 #endif
 
 #if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_1, GLIBC_2_2)

@@ -20,6 +20,14 @@
 #include <sys/stat.h>
 #include <sysdep.h>
 
+/* android: the wrapper in fc-mkdir.c takes over BOTH the public
+   `mkdir' and the internal `__mkdir' so that glibc's own callers are
+   path-translated too.  This implementation is renamed out of the way and
+   becomes the raw "next" function the wrapper calls through to.  */
+#if !IS_IN (rtld)
+# define __mkdir __android_next_mkdir
+#endif
+
 /* Create a directory named PATH with protections MODE.  */
 int
 __mkdir (const char *path, mode_t mode)
@@ -31,5 +39,7 @@ __mkdir (const char *path, mode_t mode)
 #endif
 }
 
+#if IS_IN (rtld)
 libc_hidden_def (__mkdir)
 weak_alias (__mkdir, mkdir)
+#endif

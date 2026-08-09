@@ -20,6 +20,10 @@
 #include <sys/stat.h>
 
 /* Change the protections of FILE to MODE.  */
+#if !IS_IN (rtld)
+# define lchmod __android_next_lchmod
+#endif
+
 int
 lchmod (const char *file, mode_t mode)
 {

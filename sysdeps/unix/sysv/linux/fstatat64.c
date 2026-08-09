@@ -101,6 +101,14 @@ fstatat64_time64_stat (int fd, const char *file, struct __stat64_t64 *buf,
   return r;
 }
 
+/* Renamed AFTER the includes: on __TIMESIZE == 64 the defining token is
+   __fstatat64_time64, which include/sys/stat.h collapses to __fstatat64, so the rename
+   only reaches it by macro rescanning -- and placing it before the headers
+   would rewrite their declarations too.  */
+#if !IS_IN (rtld)
+# define __fstatat64 __android_next_fstatat64
+#endif
+
 int
 __fstatat64_time64 (int fd, const char *file, struct __stat64_t64 *buf,
 		    int flag)
@@ -125,11 +133,21 @@ __fstatat64 (int fd, const char *file, struct stat64 *buf, int flags)
 #undef __fstatat
 #undef fstatat
 
+#if IS_IN (rtld)
 hidden_def (__fstatat64)
+#endif
+#if IS_IN (rtld)
 weak_alias (__fstatat64, fstatat64)
+#endif
 
 #if XSTAT_IS_XSTAT64
+#if IS_IN (rtld)
 strong_alias (__fstatat64, __fstatat)
+#endif
+#if IS_IN (rtld)
 weak_alias (__fstatat64, fstatat)
+#endif
+#if IS_IN (rtld)
 strong_alias (__fstatat64, __GI___fstatat);
+#endif
 #endif

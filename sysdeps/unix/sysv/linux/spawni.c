@@ -361,11 +361,72 @@ __spawnix (int *pid, const char *file,
      It also acts the slack for spawn_closefrom (including MIPS64 getdents64
      where it might use about 1k extra stack space).  */
   argv_size += (32 * 1024);
+#ifdef ANDROID_SPAWN_STACK
+  /* args->exec below is __execve, and once the android port's execve is
+     wired that is __fc_execve -- which runs ON THIS STACK, inside the
+     CLONE_VM|CLONE_VFORK child (invoked at :294 and :96).  Its chain is far
+     larger than anything glibc puts here.  Frame sizes MEASURED from the built
+     libc.so.6 prologues, aarch64 -O2 (`sub sp, sp, x13' after a `mov x13, #N'
+     -- the immediate is too big for the inline form):
+
+       __spawni_child                      384   spawni.c:103
+       __execvpe_common  buffer[]       ~4,448   posix/execvpe.c:114 (spawnp)
+       __fc_execve                      12,400   android/execve.c:540
+                                                 (64 + 12,336: the sret
+                                                 exec_ctx_t at :557)
+       __android_exec_prepare        12,352   execve.c:288 -- a SECOND
+                                                 exec_ctx_t (48 + 12,304).  NRV
+                                                 really is disabled: ctx is
+                                                 address-taken at :291, so the
+                                                 callee cannot build in place.
+       rel2abs        cwd[PATH_MAX-1]    4,160   rel2abs.c:35 (48 + 4,112)
+       fakechroot_localdir              ~4,176   libfakechroot.c:148
+       fakechroot_debug newfmt[2048]     2,400   libfakechroot.c:98 -- the frame
+                                                 is allocated BEFORE the getenv
+                                                 test at :104, so it is paid
+                                                 even with debugging off
+       snprintf -> __vfprintf_internal  ~1,600   rel2abs.c:56
+                                       -------
+                                       ~41,920
+
+     against the 36,864 bytes the line above yields on a 4KiB-page device --
+     plus three VLAs in execve.c (:552, :553, :567) scaling with argc, envc and
+     the preserved-environment strings.  So this overflows by ~5KiB in the
+     SIMPLEST case; it is not a margin question.  On a 16KiB-page device
+     ALIGN_UP rounds to 49,152 and it happens to fit, which is the worst
+     possible failure mode: correct on one phone, silent corruption on another.
+
+     The mapping has no guard page, and CLONE_VM means an overrun writes into
+     the PARENT's address space.  Only address space is reserved here; the pages
+     are faulted lazily, so being generous costs nothing.  */
+  argv_size += (128 * 1024);
+  /* newenvp[] at execve.c:552 is one pointer per environment entry.  */
+  if (envp != NULL)
+    for (char *const *e = envp; *e != NULL; ++e)
+      argv_size += sizeof (void *);
+#endif
   size_t stack_size = ALIGN_UP (argv_size, GLRO(dl_pagesize));
+#ifdef ANDROID_SPAWN_STACK
+  /* No arithmetic here is provable, because envbuf at execve.c:553 is bounded
+     only by the size of the environment.  Put an unwritable page below the
+     stack so that a residual overrun is a SIGSEGV in the child rather than a
+     silent write into the parent's heap -- the difference between a bug found
+     in an afternoon and one never found at all.  */
+  size_t guard_size = GLRO(dl_pagesize);
+  void *map = __mmap (NULL, stack_size + guard_size, prot,
+		      MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+  if (__glibc_unlikely (map == MAP_FAILED))
+    return errno;
+  /* The stack grows down, so the guard belongs at the low end.  A failure here
+     is not fatal: it only costs the diagnostic.  */
+  __mprotect (map, guard_size, PROT_NONE);
+  void *stack = (char *) map + guard_size;
+#else
   void *stack = __mmap (NULL, stack_size, prot,
 			MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
   if (__glibc_unlikely (stack == MAP_FAILED))
     return errno;
+#endif
 
   /* Disable asynchronous cancellation.  */
   int state;
@@ -464,7 +525,11 @@ __spawnix (int *pid, const char *file,
   else
     ec = errno;
 
+#ifdef ANDROID_SPAWN_STACK
+  __munmap (map, stack_size + guard_size);
+#else
   __munmap (stack, stack_size);
+#endif
 
   if ((ec == 0) && (pid != NULL))
     *pid = use_pidfd ? args.pidfd : new_pid;

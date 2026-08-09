@@ -23,6 +23,10 @@
 #include <sysdep.h>
 
 
+#if !IS_IN (rtld)
+# define __faccessat __android_next_faccessat
+#endif
+
 int
 __faccessat (int fd, const char *file, int mode, int flag)
 {
@@ -62,4 +66,6 @@ __faccessat (int fd, const char *file, int mode, int flag)
 
   return INLINE_SYSCALL_ERROR_RETURN_VALUE (EACCES);
 }
+#if IS_IN (rtld)
 weak_alias (__faccessat, faccessat)
+#endif

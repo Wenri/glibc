@@ -20,6 +20,12 @@
 #include <fcntl.h>
 #include <sysdep.h>
 
+/* android: the wrapper (fc-lchown.c) takes over both `lchown' and
+   `__lchown'; this implementation becomes the raw "next" it calls through to.  */
+#if !IS_IN (rtld)
+# define __lchown __android_next_lchown
+#endif
+
 /* Change the owner and group of FILE.  */
 int
 __lchown (const char *file, uid_t owner, gid_t group)
@@ -31,4 +37,6 @@ __lchown (const char *file, uid_t owner, gid_t group)
 			      AT_SYMLINK_NOFOLLOW);
 #endif
 }
+#if IS_IN (rtld)
 weak_alias (__lchown, lchown)
+#endif

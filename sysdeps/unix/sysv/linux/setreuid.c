@@ -25,9 +25,9 @@ int
 __setreuid (uid_t ruid, uid_t euid)
 {
 #ifdef __NR_setreuid32
-  return syscall (__NR_setreuid32, 2, ruid, euid);
+  return syscall (__NR_setreuid32, ruid, euid);
 #else
-  return syscall (__NR_setreuid, 2, ruid, euid);
+  return syscall (__NR_setreuid, ruid, euid);
 #endif
 }
 #ifndef __setreuid

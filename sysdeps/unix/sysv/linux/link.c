@@ -20,6 +20,12 @@
 #include <fcntl.h>
 #include <sysdep.h>
 
+/* android: the wrapper (fc-link.c) takes over both `link' and
+   `__link'; this implementation becomes the raw "next" it calls through to.  */
+#if !IS_IN (rtld)
+# define __link __android_next_link
+#endif
+
 /* Make a link to FROM called TO.  */
 int
 __link (const char *from, const char *to)
@@ -31,4 +37,6 @@ __link (const char *from, const char *to)
 #endif
 }
 
+#if IS_IN (rtld)
 weak_alias (__link, link)
+#endif

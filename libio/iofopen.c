@@ -88,9 +88,19 @@ _IO_new_fopen (const char *filename, const char *mode)
 
 strong_alias (_IO_new_fopen, __new_fopen)
 versioned_symbol (libc, _IO_new_fopen, _IO_fopen, GLIBC_2_1);
+/* android: the wrappers take over fopen and fopen64 only.
+   _IO_new_fopen stays as the untranslated implementation nextcall()
+   reaches, and _IO_fopen keeps pointing at it -- deliberately: the
+   LD_PRELOAD library never interposed _IO_fopen either (there is no
+   _IO_fopen.c in the import), so leaving it raw PRESERVES today's
+   behaviour rather than changing it.  */
+#if IS_IN (rtld)
 versioned_symbol (libc, __new_fopen, fopen, GLIBC_2_1);
+#endif
 
 # if !defined O_LARGEFILE || O_LARGEFILE == 0
 weak_alias (_IO_new_fopen, _IO_fopen64)
+#if IS_IN (rtld)
 weak_alias (_IO_new_fopen, fopen64)
+#endif
 # endif

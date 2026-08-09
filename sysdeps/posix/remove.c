@@ -26,6 +26,16 @@
 #endif
 
 
+/* Placed AFTER the #includes on purpose.  In the includer it preceded
+   <stdio.h>, so include/stdio.h's libc_hidden_proto (remove) was itself
+   rewritten to libc_hidden_proto (__android_next_remove) -- giving the
+   RENAME TARGET an asm redirect, so the definition emitted
+   __GI___android_next_remove and the wrapper's nextcall found nothing.
+   A rename must never precede the headers that declare the function.  */
+#if !IS_IN (rtld)
+# define remove __android_next_remove
+#endif
+
 int
 remove (const char *file)
 {
@@ -40,4 +50,6 @@ remove (const char *file)
 
   return 0;
 }
+#if IS_IN (rtld)
 libc_hidden_def (remove)
+#endif

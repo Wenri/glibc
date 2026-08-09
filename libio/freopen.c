@@ -33,6 +33,10 @@
 #include <fd_to_filename.h>
 #include <shlib-compat.h>
 
+#if !IS_IN (rtld)
+# define freopen __android_next_freopen
+#endif
+
 FILE *
 freopen (const char *filename, const char *mode, FILE *fp)
 {

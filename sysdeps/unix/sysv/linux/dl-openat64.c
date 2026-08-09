@@ -28,3 +28,16 @@ openat64 (int dfd, const char *file, int oflag, ...)
 
   return INLINE_SYSCALL (openat, 3, dfd, file, oflag | O_LARGEFILE);
 }
+
+/* android: rtld references __openat64, not just openat64.  Upstream
+   that reference is satisfied by pulling openat64.os out of libc_pic.a during
+   the librtld.map discovery link -- but once the wrappers claim __openat64,
+   that alias is suppressed there and the only remaining definition in the
+   archive is fc-openat64.os.  The link then drags libfakechroot into ld.so and
+   fails with duplicate __getcwd, malloc, _dl_start and __libc_fatal, none of
+   which mention openat64 (nix-on-droid/docs/ANDROID-GLIBC.md precondition 4).
+
+   Defining the alias here makes rtld self-sufficient.  libc_hidden_proto is a
+   no-op under IS_IN (rtld), so this is a plain definition with no __GI_
+   redirect.  */
+strong_alias (openat64, __openat64)

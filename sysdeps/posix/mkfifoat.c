@@ -20,6 +20,10 @@
 
 /* Create a new FIFO with permission bits MODE.  But interpret
    relative PATH names relative to the directory associated with FD.  */
+#if !IS_IN (rtld)
+# define mkfifoat __android_next_mkfifoat
+#endif
+
 int
 mkfifoat (int fd, const char *file, mode_t mode)
 {

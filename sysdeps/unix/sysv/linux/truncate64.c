@@ -23,14 +23,22 @@
 #endif
 
 /* Truncate PATH to LENGTH bytes.  */
+#if !IS_IN (rtld)
+# define __truncate64 __android_next_truncate64
+#endif
+
 int
 __truncate64 (const char *path, off64_t length)
 {
   return INLINE_SYSCALL_CALL (truncate64, path,
 			      __ALIGNMENT_ARG SYSCALL_LL64 (length));
 }
+#if IS_IN (rtld)
 weak_alias (__truncate64, truncate64)
+#endif
 
 #ifdef __OFF_T_MATCHES_OFF64_T
+#if IS_IN (rtld)
 weak_alias (__truncate64, truncate);
+#endif
 #endif

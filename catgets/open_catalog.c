@@ -30,6 +30,33 @@
 #include "catgetsinfo.h"
 #include <not-cancel.h>
 
+#ifdef ANDROID_CATGETS_TRANSLATE
+/* ANDROID: both opens below go through __open_nocancel, which no wrapper
+   covers, so catopen looked at the real filesystem root.  Wrapping catopen
+   itself would not have been enough: the second site opens a path BUILT HERE
+   from an NLSPATH template, which never passes through catopen's argument.
+   So translate at the opens, behind one macro used by both.
+
+   No wrapper and no new symbol -- the whole fix is these two paths.  */
+# include <config.h>
+# include "wrapper.h"
+
+static int
+android_open_catalog (const char *path)
+{
+  char fakechroot_buf[FAKECHROOT_PATH_MAX];
+  const char *p = expand_chroot_path (path, fakechroot_buf);
+
+  if (p == NULL)
+    /* Too long to translate; errno is already ENAMETOOLONG.  */
+    return -1;
+  return __open_nocancel (p, O_RDONLY | O_CLOEXEC);
+}
+# define CATALOG_OPEN(p) android_open_catalog (p)
+#else
+# define CATALOG_OPEN(p) __open_nocancel ((p), O_RDONLY | O_CLOEXEC)
+#endif
+
 
 #define SWAPU32(w) bswap_32 (w)
 
@@ -49,7 +76,7 @@ __open_catalog (const char *cat_name, const char *nlspath, const char *env_var,
   char *buf = NULL;
 
   if (strchr (cat_name, '/') != NULL || nlspath == NULL)
-    fd = __open_nocancel (cat_name, O_RDONLY | O_CLOEXEC);
+    fd = CATALOG_OPEN (cat_name);
   else
     {
       const char *run_nlspath = nlspath;
@@ -177,7 +204,7 @@ __open_catalog (const char *cat_name, const char *nlspath, const char *env_var,
 
 	  if (bufact != 0)
 	    {
-	      fd = __open_nocancel (buf, O_RDONLY | O_CLOEXEC);
+	      fd = CATALOG_OPEN (buf);
 	      if (fd >= 0)
 		break;
 	    }

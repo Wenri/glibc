@@ -20,6 +20,12 @@
 #include <fcntl.h>
 #include <sysdep.h>
 
+/* android: the wrapper (fc-symlink.c) takes over both `symlink' and
+   `__symlink'; this implementation becomes the raw "next" it calls through to.  */
+#if !IS_IN (rtld)
+# define __symlink __android_next_symlink
+#endif
+
 /* Make a link to FROM called TO.  */
 int
 __symlink (const char *from, const char *to)
@@ -30,4 +36,6 @@ __symlink (const char *from, const char *to)
   return INLINE_SYSCALL_CALL (symlinkat, from, AT_FDCWD, to);
 #endif
 }
+#if IS_IN (rtld)
 weak_alias (__symlink, symlink)
+#endif

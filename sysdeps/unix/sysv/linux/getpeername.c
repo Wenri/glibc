@@ -18,6 +18,12 @@
 #include <sys/socket.h>
 #include <socketcall.h>
 
+/* android: the wrapper (fc-getpeername.c) takes over both `getpeername' and
+   `__getpeername'; this implementation becomes the raw "next" it calls through to.  */
+#if !IS_IN (rtld)
+# define __getpeername __android_next_getpeername
+#endif
+
 int
 __getpeername (int fd, __SOCKADDR_ARG addr, socklen_t *len)
 {
@@ -27,4 +33,6 @@ __getpeername (int fd, __SOCKADDR_ARG addr, socklen_t *len)
   return SOCKETCALL (getpeername, fd, addr.__sockaddr__, len);
 #endif
 }
+#if IS_IN (rtld)
 weak_alias (__getpeername, getpeername)
+#endif

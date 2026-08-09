@@ -21,6 +21,10 @@
 #include <sysdep.h>
 #include <fakesyscall.h>
 
+#if !IS_IN (rtld)
+# define statx __android_next_statx
+#endif
+
 int
 statx (int fd, const char *path, int flags,
        unsigned int mask, struct statx *buf)

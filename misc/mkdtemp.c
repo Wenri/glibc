@@ -23,6 +23,10 @@
    they are replaced with a string that makes the filename unique.
    The directory is created, mode 700, and its name is returned.
    (This function comes from OpenBSD.) */
+#if !IS_IN (rtld)
+# define mkdtemp __android_next_mkdtemp
+#endif
+
 char *
 mkdtemp (char *template)
 {

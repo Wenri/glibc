@@ -52,6 +52,8 @@
 #include <dl-find_object.h>
 #include <dl-audit-check.h>
 #include <dl-call_tls_init_tp.h>
+#include <dl-sigsys.h>
+#include <dl-progname.h>
 
 #include <assert.h>
 
@@ -1814,7 +1816,8 @@ dl_main (const ElfW(Phdr) *phdr,
   _dl_audit_activity_map (main_map, LA_ACT_ADD);
 
   /* We have two ways to specify objects to preload: via environment
-     variable and via the file /etc/ld.so.preload.  The latter can also
+     variable and via the file /etc/ld-nix.so.preload (see below for why it
+     is not ld.so.preload).  The latter can also
      be used when security is enabled.  */
   assert (*first_preload == NULL);
   struct link_map **preloads = NULL;
@@ -1838,13 +1841,25 @@ dl_main (const ElfW(Phdr) *phdr,
       rtld_timer_accum (&load_time, start);
     }
 
-  /* There usually is no ld.so.preload file, it should only be used
+  /* There usually is no ld-nix.so.preload file, it should only be used
      for emergencies and testing.  So the open call etc should usually
      fail.  Using access() on a non-existing file is faster than using
      open().  So we do this first.  If it succeeds we do almost twice
      the work but this does not matter, since it is not for production
      use.  */
-  static const char preload_file[] = "/data/data/com.termux.nix/files/usr/etc/ld.so.preload";
+  /* ld-nix.so.preload, NOT ld.so.preload.  nix-on-droid uses the latter to
+     inject libfakechroot.so into every dynamically linked process; this glibc
+     has those wrappers built in (sysdeps/unix/sysv/linux/android),
+     so honouring that file would load a SECOND, older copy of the same
+     interposition, which resolves ahead of ours and silently wins.
+
+     Reading a different name decouples the two, which is what makes the
+     migration incremental and testable: a program run under the OLD loader
+     still gets the preload and behaves exactly as today, while the same
+     program run under THIS loader exercises the in-glibc wrappers alone.
+     Anything that genuinely needs a preload with this loader can use
+     ld-nix.so.preload, which nothing writes today.  */
+  static const char preload_file[] = "/data/data/com.termux.nix/files/usr/etc/ld-nix.so.preload";
   if (__glibc_unlikely (__access (preload_file, R_OK) == 0))
     {
       /* Read the contents of the file.  */
@@ -2374,6 +2389,22 @@ dl_main (const ElfW(Phdr) *phdr,
   /* We must munmap() the cache file.  */
   _dl_unload_cache ();
 #endif
+
+  /* Arm the SIGSYS handler for Android's seccomp filter.  Deliberately here,
+     at the very end of dl_main: TLS and errno work, RELRO has been applied to
+     _dl_rtld_map above (the handler's state is ordinary .bss, so that is fine),
+     and no DT_INIT / .init_array of any object has run yet -- so a constructor
+     that issues a blocked syscall is already covered.  A no-op everywhere
+     except Linux/aarch64.  */
+  _dl_sigsys_install ();
+
+  /* Only when ld.so was run as a command: the kernel took comm from the
+     loader, so ps and top would show ld-linux-*.so.1.  _dl_argv[0] is by now
+     the program, with --argv0 already applied.  Replaces a libc.so ELF
+     constructor that discovered the same thing with a readlink of
+     /proc/self/exe in every process; see sysdeps/unix/sysv/linux/dl-progname.h.  */
+  if (rtld_is_main)
+    _dl_set_process_name (_dl_argv[0]);
 
   /* Once we return, _dl_sysdep_start will invoke
      the DT_INIT functions and then *USER_ENTRY.  */

@@ -44,6 +44,14 @@
 #define GETCWD_RETURN_TYPE	static char *
 #include <sysdeps/posix/getcwd.c>
 
+/* dl-getcwd.c includes this file for ld.so and compiles with MODULE_NAME=rtld,
+   so IS_IN (rtld) is true there: the rename below is skipped and the
+   libc_hidden_def/weak_alias at the tail still fire, leaving the loader the real
+   __getcwd (precondition 4 -- already covered upstream).  */
+#if !IS_IN (rtld)
+# define __getcwd __android_next_getcwd
+#endif
+
 char *
 __getcwd (char *buf, size_t size)
 {
@@ -129,5 +137,9 @@ __getcwd (char *buf, size_t size)
 
   return NULL;
 }
+#if IS_IN (rtld)
 libc_hidden_def (__getcwd)
+#endif
+#if IS_IN (rtld)
 weak_alias (__getcwd, getcwd)
+#endif

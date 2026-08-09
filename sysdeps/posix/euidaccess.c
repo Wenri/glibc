@@ -116,6 +116,19 @@ int group_member ();
    id's instead of the real ones, and it does not check for read-only
    filesystem, text busy, etc. */
 
+/* __euidaccess IS the definition AND the __f that wrapper(euidaccess, ...)
+   claims, so this is a RENAME, not a suppress-only -- suppress-only is only
+   available when the definition has a name the wrappers never take over
+   (__libc_connect, _IO_new_fopen, ...).
+
+   The definition below is spelled with the BARE name; :85 has
+   `# define euidaccess __euidaccess', so the rename lands by rescanning
+   euidaccess -> __euidaccess -> __android_next_euidaccess, and must come
+   after that define.  */
+#if !IS_IN (rtld)
+# define __euidaccess __android_next_euidaccess
+#endif
+
 int
 euidaccess (const char *path, int mode)
 {
@@ -182,8 +195,14 @@ euidaccess (const char *path, int mode)
 #undef euidaccess
 #undef eaccess
 #ifdef weak_alias
+/* android: the wrappers take over euidaccess and eaccess.  Nothing is renamed --
+   __euidaccess stays as the untranslated implementation nextcall() reaches.  */
+#if IS_IN (rtld)
 weak_alias (__euidaccess, euidaccess)
+#endif
+#if IS_IN (rtld)
 weak_alias (__euidaccess, eaccess)
+#endif
 #endif
 
 #ifdef TEST

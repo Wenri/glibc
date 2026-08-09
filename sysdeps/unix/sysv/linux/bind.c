@@ -18,6 +18,12 @@
 #include <sys/socket.h>
 #include <socketcall.h>
 
+/* android: the wrapper (fc-bind.c) takes over both `bind' and
+   `__bind'; this implementation becomes the raw "next" it calls through to.  */
+#if !IS_IN (rtld)
+# define __bind __android_next_bind
+#endif
+
 int
 __bind (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
 {
@@ -27,4 +33,6 @@ __bind (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
   return SOCKETCALL (bind, fd, addr.__sockaddr__, len, 0, 0, 0);
 #endif
 }
+#if IS_IN (rtld)
 weak_alias (__bind, bind)
+#endif
