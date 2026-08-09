@@ -26,6 +26,10 @@
    used.  If not and if DIR is not NULL, that value is checked.  If
    that fails, P_tmpdir is tried and finally "/tmp".  The storage for
    the filename is allocated by `malloc'.  */
+#if !IS_IN (rtld)
+# define tempnam __android_next_tempnam
+#endif
+
 char *
 tempnam (const char *dir, const char *pfx)
 {

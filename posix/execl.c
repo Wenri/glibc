@@ -23,6 +23,10 @@
 
 /* Execute PATH with all arguments after PATH until
    a NULL pointer and environment from `environ'.  */
+#if !IS_IN (rtld)
+# define execl __android_next_execl
+#endif
+
 int
 execl (const char *path, const char *arg, ...)
 {
@@ -55,4 +59,6 @@ execl (const char *path, const char *arg, ...)
 
   return __execve (path, argv, __environ);
 }
+#if IS_IN (rtld)
 libc_hidden_def (execl)
+#endif

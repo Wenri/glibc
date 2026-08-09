@@ -21,6 +21,10 @@
 #include <sys/types.h>
 
 /* Create a named pipe (FIFO) named PATH with protections MODE.  */
+#if !IS_IN (rtld)
+# define mkfifo __android_next_mkfifo
+#endif
+
 int
 mkfifo (const char *path, mode_t mode)
 {

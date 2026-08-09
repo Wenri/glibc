@@ -368,6 +368,10 @@ unsetenv (const char *name)
 /* The `clearenv' was planned to be added to POSIX.1 but probably
    never made it.  Nevertheless the POSIX.9 standard (POSIX bindings
    for Fortran 77) requires this function.  */
+#if !IS_IN (rtld)
+# define __clearenv __android_next_clearenv
+#endif
+
 int
 clearenv (void)
 {
@@ -416,5 +420,7 @@ __libc_setenv_freemem (void)
 # undef clearenv
 weak_alias (__setenv, setenv)
 weak_alias (__unsetenv, unsetenv)
+#if IS_IN (rtld)
 weak_alias (__clearenv, clearenv)
+#endif
 #endif

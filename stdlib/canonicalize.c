@@ -423,6 +423,13 @@ error:
    that cannot be resolved.  If the name can be resolved, RESOLVED
    holds the same value as the value returned.  */
 
+/* android: the vendor realpath is a WHOLE-IMPLEMENTATION
+   replacement (it never calls nextcall), so this definition becomes the
+   untranslated fallback that __canonicalize_file_name below still uses.  */
+#if !IS_IN (rtld)
+# define __realpath __android_next_realpath
+#endif
+
 char *
 __realpath (const char *name, char *resolved)
 {
@@ -436,8 +443,12 @@ __realpath (const char *name, char *resolved)
   scratch_buffer_free (&bufs.rname);
   return result;
 }
+#if IS_IN (rtld)
 libc_hidden_def (__realpath)
+#endif
+#if IS_IN (rtld)
 versioned_symbol (libc, __realpath, realpath, GLIBC_2_3);
+#endif
 #endif /* !FUNC_REALPATH_WORKS || defined _LIBC */
 
 
@@ -458,9 +469,15 @@ compat_symbol (libc, __old_realpath, realpath, GLIBC_2_0);
 #endif
 
 
+#if !IS_IN (rtld)
+# define __canonicalize_file_name __android_next_canonicalize_file_name
+#endif
+
 char *
 __canonicalize_file_name (const char *name)
 {
   return __realpath (name, NULL);
 }
+#if IS_IN (rtld)
 weak_alias (__canonicalize_file_name, canonicalize_file_name)
+#endif

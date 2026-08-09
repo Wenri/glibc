@@ -28,6 +28,14 @@
    characters before a suffix of length SUFFIXLEN of TEMPLATE must be
    "XXXXXX"; they are replaced with a string that makes the filename
    unique.  Then open the file and return a fd. */
+/* The LIVE file of this pair is the NON-64 one: mkostemps64.c is #if'd to
+   nothing because O_LARGEFILE is 0 here, and this file defines the bare
+   public name with mkostemps64 as a weak alias -- the reverse of stat/open
+   (precondition 7).  */
+#if !IS_IN (rtld)
+# define mkostemps __android_next_mkostemps
+#endif
+
 int
 mkostemps (char *template, int suffixlen, int flags)
 {
@@ -41,5 +49,7 @@ mkostemps (char *template, int suffixlen, int flags)
 }
 
 #if !defined O_LARGEFILE || O_LARGEFILE == 0
+#if IS_IN (rtld)
 weak_alias (mkostemps, mkostemps64)
+#endif
 #endif

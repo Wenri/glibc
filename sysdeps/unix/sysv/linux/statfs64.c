@@ -25,6 +25,10 @@
 #undef statfs
 
 /* Return information about the filesystem on which FILE resides.  */
+#if !IS_IN (rtld)
+# define __statfs64 __android_next_statfs64
+#endif
+
 int
 __statfs64 (const char *file, struct statfs64 *buf)
 {
@@ -34,10 +38,18 @@ __statfs64 (const char *file, struct statfs64 *buf)
   return INLINE_SYSCALL_CALL (statfs, file, buf);
 #endif
 }
+#if IS_IN (rtld)
 weak_alias (__statfs64, statfs64)
+#endif
 
 #if STATFS_IS_STATFS64
+#if IS_IN (rtld)
 weak_alias (__statfs64, __statfs)
+#endif
+#if IS_IN (rtld)
 weak_alias (__statfs64, statfs)
+#endif
+#if IS_IN (rtld)
 libc_hidden_ver (__statfs64, __statfs)
+#endif
 #endif

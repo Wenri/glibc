@@ -85,6 +85,16 @@ fchmodat_fallback (int fd, const char *file, mode_t mode, int flag)
   return ret;
 }
 
+#if !IS_IN (rtld)
+# define fchmodat __android_next_fchmodat
+/* INLINE_SYSCALL_CALL pastes the FUNCTION NAME into __NR_##name, and for a
+   bare-name function that token is the one just renamed -- giving
+   __NR___android_next_fchmodat, which does not exist.  Point it back at
+   the real syscall number.  Functions renamed on __f are immune: there the
+   rename is on __fchmodat while the syscall token stays fchmodat.  */
+# define __NR___android_next_fchmodat __NR_fchmodat
+#endif
+
 int
 fchmodat (int fd, const char *file, mode_t mode, int flag)
 {
@@ -93,4 +103,6 @@ fchmodat (int fd, const char *file, mode_t mode, int flag)
 
   return fchmodat_fallback (fd, file, mode, flag);
 }
+#if IS_IN (rtld)
 libc_hidden_def (fchmodat)
+#endif

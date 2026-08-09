@@ -20,6 +20,12 @@
 #include <fcntl.h>
 #include <sysdep.h>
 
+/* android: the wrapper (fc-readlink.c) takes over both `readlink' and
+   `__readlink'; this implementation becomes the raw "next" it calls through to.  */
+#if !IS_IN (rtld)
+# define __readlink __android_next_readlink
+#endif
+
 /* Read the contents of the symbolic link PATH into no more than
    LEN bytes of BUF.  The contents are not null-terminated.
    Returns the number of characters read, or -1 for errors.  */
@@ -32,4 +38,6 @@ __readlink (const char *path, char *buf, size_t len)
   return INLINE_SYSCALL_CALL (readlinkat, AT_FDCWD, path, buf, len);
 #endif
 }
+#if IS_IN (rtld)
 weak_alias (__readlink, readlink)
+#endif

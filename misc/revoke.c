@@ -19,6 +19,10 @@
 #include <unistd.h>
 #include <errno.h>
 
+#if !IS_IN (rtld)
+# define __revoke __android_next_revoke
+#endif
+
 int
 __revoke (const char *file)
 {
@@ -26,5 +30,7 @@ __revoke (const char *file)
   return -1;
 }
 
+#if IS_IN (rtld)
 weak_alias (__revoke, revoke)
+#endif
 stub_warning (revoke)

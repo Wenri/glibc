@@ -221,4 +221,6 @@ __pathconf (const char *path, int name)
 }
 
 #undef __pathconf
+#if IS_IN (rtld)
 weak_alias (__pathconf, pathconf)
+#endif

@@ -28,6 +28,14 @@ __libc_connect (int fd, __CONST_SOCKADDR_ARG addr, socklen_t len)
   return SOCKETCALL_CANCEL (connect, fd, addr.__sockaddr__, len);
 #endif
 }
+/* android: the wrappers take over connect and __connect.  Nothing is renamed --
+   __libc_connect stays as the untranslated implementation nextcall() reaches.  */
+#if IS_IN (rtld)
 weak_alias (__libc_connect, connect)
+#endif
+#if IS_IN (rtld)
 weak_alias (__libc_connect, __connect)
+#endif
+#if IS_IN (rtld)
 libc_hidden_weak (__connect)
+#endif

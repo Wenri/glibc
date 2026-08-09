@@ -21,6 +21,10 @@
 #include <sysdep-cancel.h>
 
 /* Create FILE with protections MODE.  */
+#if !IS_IN (rtld)
+# define __creat64 __android_next_creat64
+#endif
+
 int
 __creat64 (const char *file, mode_t mode)
 {
@@ -31,9 +35,15 @@ __creat64 (const char *file, mode_t mode)
   return __open64 (file, O_WRONLY | O_CREAT | O_TRUNC, mode);
 #endif
 }
+#if IS_IN (rtld)
 weak_alias (__creat64, creat64)
+#endif
 
 #ifdef __OFF_T_MATCHES_OFF64_T
+#if IS_IN (rtld)
 strong_alias (__creat64, __creat)
+#endif
+#if IS_IN (rtld)
 weak_alias (__creat64, creat)
+#endif
 #endif

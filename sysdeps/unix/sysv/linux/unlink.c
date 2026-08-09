@@ -20,6 +20,12 @@
 #include <fcntl.h>
 #include <sysdep.h>
 
+/* android: the wrapper (fc-unlink.c) takes over both `unlink' and
+   `__unlink'; this implementation becomes the raw "next" it calls through to.  */
+#if !IS_IN (rtld)
+# define __unlink __android_next_unlink
+#endif
+
 /* Remove the link named NAME.  */
 int
 __unlink (const char *name)
@@ -30,4 +36,6 @@ __unlink (const char *name)
   return INLINE_SYSCALL_CALL (unlinkat, AT_FDCWD, name, 0);
 #endif
 }
+#if IS_IN (rtld)
 weak_alias (__unlink, unlink)
+#endif

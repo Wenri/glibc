@@ -25,9 +25,15 @@
 
 /* Return nonzero if PATTERN contains any metacharacters.
    Metacharacters can be quoted with backslashes if QUOTE is nonzero.  */
+#if !IS_IN (rtld)
+# define __glob_pattern_p __android_next_glob_pattern_p
+#endif
+
 int
 __glob_pattern_p (const char *pattern, int quote)
 {
   return __glob_pattern_type (pattern, quote) == GLOBPAT_SPECIAL;
 }
+#if IS_IN (rtld)
 weak_alias (__glob_pattern_p, glob_pattern_p)
+#endif

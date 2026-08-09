@@ -21,6 +21,10 @@
 #include <errno.h>
 #include <sysdep.h>
 
+#if !IS_IN (rtld)
+# define __mknodat __android_next_mknodat
+#endif
+
 int
 __mknodat (int fd, const char *path, mode_t mode, dev_t dev)
 {
@@ -32,5 +36,9 @@ __mknodat (int fd, const char *path, mode_t mode, dev_t dev)
 
   return INLINE_SYSCALL_CALL (mknodat, fd, path, mode, k_dev);
 }
+#if IS_IN (rtld)
 libc_hidden_def (__mknodat)
+#endif
+#if IS_IN (rtld)
 weak_alias (__mknodat, mknodat)
+#endif

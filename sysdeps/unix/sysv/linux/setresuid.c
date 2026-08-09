@@ -25,9 +25,9 @@ int
 __setresuid (uid_t ruid, uid_t euid, uid_t suid)
 {
 #ifdef __NR_setresuid32
-  return syscall (__NR_setresuid32, 3, ruid, euid, suid);
+  return syscall (__NR_setresuid32, ruid, euid, suid);
 #else
-  return syscall (__NR_setresuid, 3, ruid, euid, suid);
+  return syscall (__NR_setresuid, ruid, euid, suid);
 #endif
 }
 libc_hidden_def (__setresuid)

@@ -211,4 +211,8 @@ __libc_system (const char *line)
 
   return do_system (line);
 }
+/* android: the wrappers take over system.  Nothing is renamed --
+   __libc_system stays as the untranslated implementation nextcall() reaches.  */
+#if IS_IN (rtld)
 weak_alias (__libc_system, system)
+#endif

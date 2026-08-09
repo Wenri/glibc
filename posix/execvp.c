@@ -20,9 +20,15 @@
 
 /* Execute FILE, searching in the `PATH' environment variable if it contains
    no slashes, with arguments ARGV and environment from `environ'.  */
+#if !IS_IN (rtld)
+# define execvp __android_next_execvp
+#endif
+
 int
 execvp (const char *file, char *const argv[])
 {
   return __execvpe (file, argv, __environ);
 }
+#if IS_IN (rtld)
 libc_hidden_def (execvp)
+#endif

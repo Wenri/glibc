@@ -25,9 +25,9 @@ int
 __setgid (gid_t gid)
 {
 #ifdef __NR_setgid32
-  return syscall (__NR_setgid32, 1, gid);
+  return syscall (__NR_setgid32, gid);
 #else
-  return syscall (__NR_setgid, 1, gid);
+  return syscall (__NR_setgid, gid);
 #endif
 }
 #ifndef __setgid

@@ -22,6 +22,10 @@
 #include <unistd.h>
 
 
+#if !IS_IN (rtld)
+# define getwd __android_next_getwd
+#endif
+
 char *
 getwd (char *buf)
 {

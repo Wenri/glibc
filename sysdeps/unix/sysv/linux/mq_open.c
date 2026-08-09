@@ -49,7 +49,7 @@ __mq_open (const char *name, int oflag, ...)
       va_end (ap);
     }
 
-  return syscall (__NR_mq_open, 4, name + 1, oflag, mode, attr);
+  return syscall (__NR_mq_open, name + 1, oflag, mode, attr);
 }
 versioned_symbol (libc, __mq_open, mq_open, GLIBC_2_34);
 #if OTHER_SHLIB_COMPAT (librt, GLIBC_2_3_4, GLIBC_2_34)

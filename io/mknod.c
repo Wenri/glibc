@@ -18,10 +18,18 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#if !IS_IN (rtld)
+# define __mknod __android_next_mknod
+#endif
+
 int
 __mknod (const char *path, mode_t mode, dev_t dev)
 {
   return __mknodat (AT_FDCWD, path, mode, dev);
 }
+#if IS_IN (rtld)
 libc_hidden_def (__mknod)
+#endif
+#if IS_IN (rtld)
 weak_alias (__mknod, mknod)
+#endif

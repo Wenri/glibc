@@ -22,6 +22,21 @@
 
 #include "utmp-private.h"
 
+#ifdef ANDROID_UTMP_TRANSLATE
+/* ANDROID: the name recorded here is opened later by __libc_setutent with
+   __open_nocancel, which no wrapper covers -- so an untranslated path was
+   stored and every later utmp read failed.  Translating at REGISTRATION, as
+   posix/spawn_faction_addopen.c does, rather than at the open: it runs in
+   ordinary context and the path is strdup'd here anyway.
+
+   No wrapper and no new symbol for this one.  utmpname has the ordinary
+   __utmpname + weak_alias shape a table entry handles, but wrapping it would
+   add exported-symbol surface to reach one strdup; in-place translation is the
+   whole fix and costs no ABI.  */
+# include <config.h>
+# include "wrapper.h"
+#endif
+
 
 /* This is the default name.  */
 static const char default_file_name[] = _PATH_UTMP;
@@ -37,6 +52,18 @@ int
 __utmpname (const char *file)
 {
   int result = -1;
+#ifdef ANDROID_UTMP_TRANSLATE
+  char fakechroot_buf[FAKECHROOT_PATH_MAX];
+
+  if (file != NULL)
+    {
+      const char *xfile = expand_chroot_path (file, fakechroot_buf);
+      if (xfile == NULL)
+	/* Too long to translate; errno is already ENAMETOOLONG.  */
+	return -1;
+      file = xfile;
+    }
+#endif
 
   __libc_lock_lock (__libc_utmp_lock);
 

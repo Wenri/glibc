@@ -20,6 +20,10 @@
 #include <time.h>
 #include <fcntl.h>
 
+#if !IS_IN (rtld)
+# define __utime __android_next_utime
+#endif
+
 int
 __utime64 (const char *file, const struct __utimbuf64 *times)
 {
@@ -53,5 +57,9 @@ __utime (const char *file, const struct utimbuf *times)
   return __utime64 (file, times ? &utb64 : NULL);
 }
 #endif
+#if IS_IN (rtld)
 strong_alias (__utime, utime)
+#endif
+#if IS_IN (rtld)
 libc_hidden_def (utime)
+#endif

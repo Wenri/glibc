@@ -368,4 +368,12 @@ ld {
     __rseq_offset;
     __rseq_size;
   }
+  GLIBC_PRIVATE {
+    # The single deliberate ABI addition of the the android port port: it
+    # lets libc's __libc_sigaction hand an application's SIGSYS disposition to
+    # ld.so's seccomp handler for chaining, instead of displacing it.  See
+    # sysdeps/unix/sysv/linux/dl-sigsys.c.  GLIBC_PRIVATE is filtered out of
+    # the abilists, so this does not perturb them.
+    _dl_sigsys_exchange;
+  }
 }

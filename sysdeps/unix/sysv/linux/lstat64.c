@@ -23,6 +23,14 @@
 #include <kernel_stat.h>
 #include <stat_t64_cp.h>
 
+/* Renamed AFTER the includes: on __TIMESIZE == 64 the defining token is
+   __lstat64_time64, which include/sys/stat.h collapses to __lstat64, so the rename
+   only reaches it by macro rescanning -- and placing it before the headers
+   would rewrite their declarations too.  */
+#if !IS_IN (rtld)
+# define __lstat64 __android_next_lstat64
+#endif
+
 int
 __lstat64_time64 (const char *file, struct __stat64_t64 *buf)
 {
@@ -39,13 +47,21 @@ __lstat64 (const char *file, struct stat64 *buf)
 	 ?: __cp_stat64_t64_stat64 (&st_t64, buf);
 }
 #endif
+#if IS_IN (rtld)
 hidden_def (__lstat64)
+#endif
+#if IS_IN (rtld)
 weak_alias (__lstat64, lstat64)
+#endif
 
 #undef __lstat
 #undef lstat
 
 #if XSTAT_IS_XSTAT64
+#if IS_IN (rtld)
 strong_alias (__lstat64, __lstat)
+#endif
+#if IS_IN (rtld)
 weak_alias (__lstat64, lstat)
+#endif
 #endif

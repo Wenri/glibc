@@ -30,9 +30,9 @@ setegid (gid_t gid)
     return INLINE_SYSCALL_ERROR_RETURN_VALUE (EINVAL);
 
 #ifdef __NR_setresgid32
-  result = syscall (__NR_setresgid32, 3, -1, gid, -1);
+  result = syscall (__NR_setresgid32, -1, gid, -1);
 #else
-  result = syscall (__NR_setresgid, 3, -1, gid, -1);
+  result = syscall (__NR_setresgid, -1, gid, -1);
 #endif
 
   return result;

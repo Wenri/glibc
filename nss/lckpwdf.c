@@ -79,6 +79,10 @@ static void noop_handler (int __sig);
   } while (0)
 
 
+#if !IS_IN (rtld)
+# define __lckpwdf __android_next_lckpwdf
+#endif
+
 int
 __lckpwdf (void)
 {
@@ -138,8 +142,14 @@ __lckpwdf (void)
 
   RETURN_CLEAR_ALARM (result);
 }
+#if IS_IN (rtld)
 weak_alias (__lckpwdf, lckpwdf)
+#endif
 
+
+#if !IS_IN (rtld)
+# define __ulckpwdf __android_next_ulckpwdf
+#endif
 
 int
 __ulckpwdf (void)
@@ -165,7 +175,9 @@ __ulckpwdf (void)
 
   return result;
 }
+#if IS_IN (rtld)
 weak_alias (__ulckpwdf, ulckpwdf)
+#endif
 
 
 static void

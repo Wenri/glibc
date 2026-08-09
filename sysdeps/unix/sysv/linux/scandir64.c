@@ -19,6 +19,13 @@
 #include <dirent.h>
 #undef scandir
 
+/* Only the _DIRENT_MATCHES_DIRENT64 branch below is live here; the whole
+   versioned_symbol/compat_symbol #else arm is dead on this arch, so this
+   is an ordinary rename despite how the file reads (precondition 7).  */
+#if !IS_IN (rtld)
+# define __scandir64 __android_next_scandir64
+#endif
+
 int
 __scandir64 (const char *dir, struct dirent64 ***namelist,
 	   int (*select) (const struct dirent64 *),
@@ -28,8 +35,12 @@ __scandir64 (const char *dir, struct dirent64 ***namelist,
 }
 
 #if _DIRENT_MATCHES_DIRENT64
+#if IS_IN (rtld)
 weak_alias (__scandir64, scandir64)
+#endif
+#if IS_IN (rtld)
 weak_alias (__scandir64, scandir)
+#endif
 #else
 # include <shlib-compat.h>
 versioned_symbol (libc, __scandir64, scandir64, GLIBC_2_2);

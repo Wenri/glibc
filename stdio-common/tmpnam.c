@@ -24,6 +24,10 @@ static char tmpnam_buffer[L_tmpnam];
 /* Generate a unique filename in P_tmpdir.
 
    This function is *not* thread safe!  */
+#if !IS_IN (rtld)
+# define tmpnam __android_next_tmpnam
+#endif
+
 char *
 tmpnam (char s[L_tmpnam])
 {

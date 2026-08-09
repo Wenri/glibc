@@ -20,6 +20,12 @@
 #include <unistd.h>
 #include <sysdep-cancel.h>
 
+/* android: the wrapper (fc-access.c) takes over both `access' and
+   `__access'; this implementation becomes the raw "next" it calls through to.  */
+#if !IS_IN (rtld)
+# define __access __android_next_access
+#endif
+
 int
 __access (const char *file, int type)
 {
@@ -29,5 +35,9 @@ __access (const char *file, int type)
   return INLINE_SYSCALL_CALL (faccessat, AT_FDCWD, file, type);
 #endif
 }
+#if IS_IN (rtld)
 libc_hidden_def (__access)
+#endif
+#if IS_IN (rtld)
 weak_alias (__access, access)
+#endif

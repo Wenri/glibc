@@ -35,6 +35,13 @@ static long int posix_pathconf (const char *file, int name);
 
 
 /* Get file-specific information about FILE.  */
+/* The included file defines `static posix_pathconf' via the macro above and
+   #undefs it at its tail; THIS is the real __pathconf, so the rename goes
+   here, after the include.  CFLAGS-pathconf.c applies to this file.  */
+#if !IS_IN (rtld)
+# define __pathconf __android_next_pathconf
+#endif
+
 long int
 __pathconf (const char *file, int name)
 {

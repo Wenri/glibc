@@ -36,6 +36,7 @@
 #include <stdbool.h>
 #include <elf-initfini.h>
 #include <shlib-compat.h>
+#include <dl-sigsys.h>
 
 #include <elf/dl-tunables.h>
 
@@ -312,6 +313,14 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
     __cxa_atexit ((void (*) (void *)) rtld_fini, NULL, NULL);
 
 #ifndef SHARED
+  /* Arm the SIGSYS handler for Android's seccomp filter.  A dynamic process
+     gets this from ld.so at the end of dl_main; a static one has no ld.so, and
+     cannot be given one -- ld.so re-execs a static binary rather than hosting
+     it (see sysdeps/unix/sysv/linux/libc-dl-sigsys.c).  First thing in the
+     static startup path, so it covers __libc_init_first, every ELF constructor
+     and main.  A no-op everywhere except Linux/aarch64.  */
+  _dl_sigsys_install ();
+
   /* Perform early initialization.  In the shared case, this function
      is called from the dynamic loader as early as possible.  */
   __libc_early_init (true);

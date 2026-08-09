@@ -21,6 +21,10 @@
 
 /* Change the access time of FILE relative to FD to TVP[0] and
    the modification time of FILE to TVP[1].  */
+#if !IS_IN (rtld)
+# define __futimesat __android_next_futimesat
+#endif
+
 int
 __futimesat64 (int fd, const char *file, const struct __timeval64 tvp64[2])
 {
@@ -51,4 +55,6 @@ __futimesat (int fd, const char *file, const struct timeval tvp[2])
   return __futimesat64 (fd, file, tvp ? &tv64[0] : NULL);
 }
 #endif
+#if IS_IN (rtld)
 weak_alias (__futimesat, futimesat)
+#endif

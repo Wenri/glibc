@@ -20,6 +20,10 @@
 #include <stdio.h>
 #include <sysdep.h>
 
+#if !IS_IN (rtld)
+# define __renameat2 __android_next_renameat2
+#endif
+
 int
 __renameat2 (int oldfd, const char *old, int newfd, const char *new,
            unsigned int flags)
@@ -41,5 +45,9 @@ __renameat2 (int oldfd, const char *old, int newfd, const char *new,
   return -1;
 #endif
 }
+#if IS_IN (rtld)
 libc_hidden_def (__renameat2)
+#endif
+#if IS_IN (rtld)
 weak_alias (__renameat2, renameat2)
+#endif

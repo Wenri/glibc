@@ -71,6 +71,10 @@ libc_hidden_def (__utimensat64_helper)
    the modification time of FILE to TSP[1].
 
    Starting with 2.6.22 the Linux kernel has the utimensat syscall.  */
+#if !IS_IN (rtld)
+# define __utimensat __android_next_utimensat
+#endif
+
 int
 __utimensat64 (int fd, const char *file, const struct __timespec64 tsp64[2],
                int flags)
@@ -95,4 +99,6 @@ __utimensat (int fd, const char *file, const struct timespec tsp[2],
   return __utimensat64 (fd, file, tsp ? &tsp64[0] : NULL, flags);
 }
 #endif
+#if IS_IN (rtld)
 weak_alias (__utimensat, utimensat)
+#endif

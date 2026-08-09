@@ -77,6 +77,10 @@ __opendirat (int dfd, const char *name)
 
 
 /* Open a directory stream on NAME.  */
+#if !IS_IN (rtld)
+# define __opendir __android_next_opendir
+#endif
+
 DIR *
 __opendir (const char *name)
 {
@@ -85,7 +89,9 @@ __opendir (const char *name)
 
   return opendir_tail (__open_nocancel (name, opendir_oflags));
 }
+#if IS_IN (rtld)
 weak_alias (__opendir, opendir)
+#endif
 
 DIR *
 __alloc_dir (int fd, bool close_fd, int flags,

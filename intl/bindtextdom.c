@@ -314,6 +314,10 @@ set_binding_values (const char *domainname,
 
 /* Specify that the DOMAINNAME message catalog will be found
    in DIRNAME rather than in the system locale data base.  */
+#if !IS_IN (rtld)
+# define __bindtextdomain __android_next_bindtextdomain
+#endif
+
 char *
 BINDTEXTDOMAIN (const char *domainname, const char *dirname)
 {
@@ -332,6 +336,8 @@ BIND_TEXTDOMAIN_CODESET (const char *domainname, const char *codeset)
 
 #ifdef _LIBC
 /* Aliases for function names in GNU C Library.  */
+#if IS_IN (rtld)
 weak_alias (__bindtextdomain, bindtextdomain);
+#endif
 weak_alias (__bind_textdomain_codeset, bind_textdomain_codeset);
 #endif

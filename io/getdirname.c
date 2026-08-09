@@ -24,6 +24,10 @@
    If the environment variable `PWD' is set, and its value is correct,
    that value is used.  */
 
+#if !IS_IN (rtld)
+# define get_current_dir_name __android_next_get_current_dir_name
+#endif
+
 char *
 get_current_dir_name (void)
 {

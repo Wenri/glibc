@@ -21,6 +21,10 @@
 #include <sysdep.h>
 #include <errno.h>
 
+#if !IS_IN (rtld)
+# define __renameat __android_next_renameat
+#endif
+
 int
 __renameat (int oldfd, const char *old, int newfd, const char *new)
 {
@@ -30,5 +34,9 @@ __renameat (int oldfd, const char *old, int newfd, const char *new)
   return INLINE_SYSCALL_CALL (renameat2, oldfd, old, newfd, new, 0);
 #endif
 }
+#if IS_IN (rtld)
 libc_hidden_def (__renameat)
+#endif
+#if IS_IN (rtld)
 weak_alias (__renameat, renameat)
+#endif

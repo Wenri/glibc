@@ -21,6 +21,10 @@
 /* Generate a unique temporary file name from TEMPLATE.
    The last six characters of TEMPLATE must be "XXXXXX";
    they are replaced with a string that makes the filename unique.  */
+#if !IS_IN (rtld)
+# define __mktemp __android_next_mktemp
+#endif
+
 char *
 __mktemp (char *template)
 {
@@ -30,8 +34,12 @@ __mktemp (char *template)
 
   return template;
 }
+#if IS_IN (rtld)
 libc_hidden_def (__mktemp)
+#endif
+#if IS_IN (rtld)
 weak_alias (__mktemp, mktemp)
+#endif
 
 link_warning (mktemp, "the use of `mktemp' is dangerous, "
 		      "better use `mkstemp' or `mkdtemp'")
