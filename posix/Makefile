@@ -326,6 +326,7 @@ tests := \
   tst-wait3 \
   tst-wait4 \
   tst-waitid \
+  tst-wordexp-append \
   tst-wordexp-nocmd \
   tst-wordexp-reuse \
   tstgetopt \
@@ -356,6 +357,7 @@ tests-internal := \
 tests-container := \
   bug-ga2 \
   tst-vfork3 \
+  tst-wordexp-tilde \
   # tests-container
 
 tests-time64 := \
